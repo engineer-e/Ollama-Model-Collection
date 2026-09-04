@@ -1,0 +1,10 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+granite3.2:latest,4.9GB,128K,Text,9bcb3335083f,1 year ago
+granite3.2:2b,1.5GB,128K,Text,9d79a41f2f75,1 year ago
+granite3.2:8b,4.9GB,128K,Text,9bcb3335083f,1 year ago
+granite3.2:2b-instruct-q4_K_M,1.5GB,128K,Text,9d79a41f2f75,1 year ago
+granite3.2:2b-instruct-q8_0,2.7GB,128K,Text,f6f4d0d4b4fa,1 year ago
+granite3.2:2b-instruct-fp16,5.1GB,128K,Text,c86bd0b2f0bd,1 year ago
+granite3.2:8b-instruct-q4_K_M,4.9GB,128K,Text,9bcb3335083f,1 year ago
+granite3.2:8b-instruct-q8_0,8.7GB,128K,Text,1b54499df0ff,1 year ago
+granite3.2:8b-instruct-fp16,16GB,128K,Text,b9679f6ae759,1 year ago

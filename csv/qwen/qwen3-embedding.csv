@@ -1,0 +1,13 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+qwen3-embedding:latest,4.7GB,40K,Text,64b933495768,11 months ago
+qwen3-embedding:0.6b,639MB,32K,Text,ac6da0dfba84,11 months ago
+qwen3-embedding:4b,2.5GB,40K,Text,df5bd2e3c74c,11 months ago
+qwen3-embedding:8b,4.7GB,40K,Text,64b933495768,11 months ago
+qwen3-embedding:0.6b-q8_0,639MB,32K,Text,ac6da0dfba84,11 months ago
+qwen3-embedding:0.6b-fp16,1.2GB,32K,Text,67a7592a8852,11 months ago
+qwen3-embedding:4b-q4_K_M,2.5GB,40K,Text,df5bd2e3c74c,11 months ago
+qwen3-embedding:4b-q8_0,4.3GB,40K,Text,357d756ba8e5,11 months ago
+qwen3-embedding:4b-fp16,8.0GB,40K,Text,3c93b6415795,11 months ago
+qwen3-embedding:8b-q4_K_M,4.7GB,40K,Text,64b933495768,11 months ago
+qwen3-embedding:8b-q8_0,8.0GB,40K,Text,9704fd987c12,11 months ago
+qwen3-embedding:8b-fp16,15GB,40K,Text,aa924958585e,11 months ago

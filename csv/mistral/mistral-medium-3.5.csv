@@ -1,0 +1,6 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+mistral-medium-3.5:latest,80GB,256K,"Text, Image",0341632adb05,4 months ago
+mistral-medium-3.5:128b,80GB,256K,"Text, Image",0341632adb05,4 months ago
+mistral-medium-3.5:128b-q4_K_M,80GB,256K,"Text, Image",0341632adb05,4 months ago
+mistral-medium-3.5:128b-q8_0,138GB,256K,"Text, Image",4e309f1ff6ce,4 months ago
+mistral-medium-3.5:128b-bf16,255GB,256K,"Text, Image",03b1ca2260f6,4 months ago

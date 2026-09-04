@@ -1,0 +1,10 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+llama3.2-vision:latest,7.8GB,128K,"Text, Image",6f2f9757ae97,1 year ago
+llama3.2-vision:11b,7.8GB,128K,"Text, Image",6f2f9757ae97,1 year ago
+llama3.2-vision:90b,55GB,128K,"Text, Image",bee2a956f3a8,1 year ago
+llama3.2-vision:11b-instruct-q4_K_M,7.8GB,128K,"Text, Image",6f2f9757ae97,1 year ago
+llama3.2-vision:11b-instruct-q8_0,12GB,128K,"Text, Image",a5b7471a68aa,1 year ago
+llama3.2-vision:11b-instruct-fp16,21GB,128K,"Text, Image",24c59ad3b10a,1 year ago
+llama3.2-vision:90b-instruct-q4_K_M,55GB,128K,"Text, Image",bee2a956f3a8,1 year ago
+llama3.2-vision:90b-instruct-q8_0,95GB,128K,"Text, Image",0882d58d0635,1 year ago
+llama3.2-vision:90b-instruct-fp16,177GB,128K,"Text, Image",7592aaa4a219,1 year ago

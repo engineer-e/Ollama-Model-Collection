@@ -1,0 +1,10 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+medgemma:latest,3.3GB,128K,"Text, Image",9fe4e9a6c9bd,4 months ago
+medgemma:4b,3.3GB,128K,"Text, Image",9fe4e9a6c9bd,4 months ago
+medgemma:27b,17GB,128K,"Text, Image",58238ae38f99,4 months ago
+medgemma:4b-it-q4_K_M,3.3GB,128K,"Text, Image",9fe4e9a6c9bd,4 months ago
+medgemma:4b-it-q8_0,5.0GB,128K,"Text, Image",fd0b43b1d0ef,4 months ago
+medgemma:4b-it-bf16,8.6GB,128K,"Text, Image",38229e514edc,4 months ago
+medgemma:27b-it-q4_K_M,17GB,128K,"Text, Image",58238ae38f99,4 months ago
+medgemma:27b-it-q8_0,30GB,128K,"Text, Image",b3e649e18d1b,4 months ago
+medgemma:27b-it-bf16,55GB,128K,"Text, Image",8b473b4cb2df,4 months ago

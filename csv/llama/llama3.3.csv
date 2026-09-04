@@ -1,0 +1,15 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+llama3.3:latest,43GB,128K,Text,a6eb4748fd29,1 year ago
+llama3.3:70b,43GB,128K,Text,a6eb4748fd29,1 year ago
+llama3.3:70b-instruct-q2_K,26GB,128K,Text,a6f03da15cbc,1 year ago
+llama3.3:70b-instruct-q3_K_S,31GB,128K,Text,84d6ecd40b42,1 year ago
+llama3.3:70b-instruct-q3_K_M,34GB,128K,Text,151348be3103,1 year ago
+llama3.3:70b-instruct-q4_0,40GB,128K,Text,e5afe30ba419,1 year ago
+llama3.3:70b-instruct-q4_K_S,40GB,128K,Text,3d546a04bbd5,1 year ago
+llama3.3:70b-instruct-q4_K_M,43GB,128K,Text,a6eb4748fd29,1 year ago
+llama3.3:70b-instruct-q5_0,49GB,128K,Text,522f1b464c62,1 year ago
+llama3.3:70b-instruct-q5_1,53GB,128K,Text,118a0cbe95b2,1 year ago
+llama3.3:70b-instruct-q5_K_M,50GB,128K,Text,a495e09a0513,1 year ago
+llama3.3:70b-instruct-q6_K,58GB,128K,Text,992c05c90cd8,1 year ago
+llama3.3:70b-instruct-q8_0,75GB,128K,Text,d5b5e1b84868,1 year ago
+llama3.3:70b-instruct-fp16,141GB,128K,Text,8fbd361705a0,1 year ago

@@ -1,0 +1,11 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+granite3-guardian:latest,2.7GB,8K,Text,ba81a177bd23,1 year ago
+granite3-guardian:2b,2.7GB,8K,Text,ba81a177bd23,1 year ago
+granite3-guardian:8b,5.8GB,8K,Text,c8d7d5c76685,1 year ago
+granite3-guardian:2b-q8_0,2.7GB,8K,Text,ba81a177bd23,1 year ago
+granite3-guardian:2b-fp16,5.1GB,8K,Text,2bf55927dd85,1 year ago
+granite3-guardian:8b-q5_K_S,5.6GB,8K,Text,edeec72aa741,1 year ago
+granite3-guardian:8b-q5_K_M,5.8GB,8K,Text,c8d7d5c76685,1 year ago
+granite3-guardian:8b-q6_K,6.7GB,8K,Text,200f63c67d98,1 year ago
+granite3-guardian:8b-q8_0,8.7GB,8K,Text,a91578a591d2,1 year ago
+granite3-guardian:8b-fp16,16GB,8K,Text,d9ecead6310d,1 year ago

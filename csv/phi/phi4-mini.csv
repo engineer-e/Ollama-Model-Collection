@@ -1,0 +1,6 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+phi4-mini:latest,2.5GB,128K,Text,78fad5d182a7,1 year ago
+phi4-mini:3.8b,2.5GB,128K,Text,78fad5d182a7,1 year ago
+phi4-mini:3.8b-q4_K_M,2.5GB,128K,Text,78fad5d182a7,1 year ago
+phi4-mini:3.8b-q8_0,4.1GB,4K,Text,0be8e6979181,1 year ago
+phi4-mini:3.8b-fp16,7.7GB,4K,Text,bd71721a0e80,1 year ago

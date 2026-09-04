@@ -1,0 +1,10 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+phi4-reasoning:latest,11GB,32K,Text,47e2630ccbcd,1 year ago
+phi4-reasoning:plus,11GB,32K,Text,f0ad3edce8e4,1 year ago
+phi4-reasoning:14b,11GB,32K,Text,47e2630ccbcd,1 year ago
+phi4-reasoning:14b-plus-q4_K_M,11GB,32K,Text,f0ad3edce8e4,1 year ago
+phi4-reasoning:14b-plus-q8_0,17GB,32K,Text,ecd8f64ff877,1 year ago
+phi4-reasoning:14b-plus-fp16,29GB,32K,Text,561e2e2df29e,1 year ago
+phi4-reasoning:14b-q4_K_M,11GB,32K,Text,47e2630ccbcd,1 year ago
+phi4-reasoning:14b-q8_0,17GB,32K,Text,30b78bf47222,1 year ago
+phi4-reasoning:14b-fp16,29GB,32K,Text,d990c3364a6c,1 year ago

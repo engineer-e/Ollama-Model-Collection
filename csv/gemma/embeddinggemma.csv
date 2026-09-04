@@ -1,0 +1,6 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+embeddinggemma:latest,622MB,2K,Text,85462619ee72,12 months ago
+embeddinggemma:300m,622MB,2K,Text,85462619ee72,12 months ago
+embeddinggemma:300m-qat-q4_0,239MB,2K,Text,101341d65c2c,12 months ago
+embeddinggemma:300m-qat-q8_0,338MB,2K,Text,e84a7acc2394,12 months ago
+embeddinggemma:300m-bf16,622MB,2K,Text,85462619ee72,12 months ago

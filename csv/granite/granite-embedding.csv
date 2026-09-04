@@ -1,0 +1,7 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+granite-embedding:latest,63MB,512,Text,eb4c533ba6f7,1 year ago
+granite-embedding:30m,63MB,512,Text,eb4c533ba6f7,1 year ago
+granite-embedding:278m,563MB,512,Text,1a37926bf842,1 year ago
+granite-embedding:30m-en,63MB,512,Text,eb4c533ba6f7,1 year ago
+granite-embedding:30m-en-fp16,63MB,512,Text,eb4c533ba6f7,1 year ago
+granite-embedding:278m-fp16,563MB,512,Text,1a37926bf842,1 year ago

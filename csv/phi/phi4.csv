@@ -1,0 +1,6 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+phi4:latest,9.1GB,16K,Text,ac896e5b8b34,1 year ago
+phi4:14b,9.1GB,16K,Text,ac896e5b8b34,1 year ago
+phi4:14b-q4_K_M,9.1GB,16K,Text,ac896e5b8b34,1 year ago
+phi4:14b-q8_0,16GB,16K,Text,310d366232f4,1 year ago
+phi4:14b-fp16,29GB,16K,Text,227695f919b5,1 year ago

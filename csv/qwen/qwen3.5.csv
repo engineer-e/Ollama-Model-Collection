@@ -1,0 +1,65 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+qwen3.5:latest,6.6GB,256K,"Text, Image",6488c96fa5fa,6 months ago
+qwen3.5:cloud,,256K,"Text, Image",a7bf6f7891c3,6 months ago
+qwen3.5:0.8b,1.0GB,256K,"Text, Image",f3817196d142,6 months ago
+qwen3.5:2b,2.7GB,256K,"Text, Image",324d162be6ca,6 months ago
+qwen3.5:4b,3.4GB,256K,"Text, Image",2a654d98e6fb,6 months ago
+qwen3.5:9b,6.6GB,256K,"Text, Image",6488c96fa5fa,6 months ago
+qwen3.5:27b,17GB,256K,"Text, Image",7653528ba5cb,6 months ago
+qwen3.5:35b,24GB,256K,"Text, Image",3460ffeede54,6 months ago
+qwen3.5:122b,81GB,256K,"Text, Image",8b9d11d807c5,6 months ago
+qwen3.5:0.8b-mlx,MLX 1.2GB,256K,"Text, Image",12f40a7f8473,2 days ago
+qwen3.5:0.8b-mlx-bf16,MLX 1.7GB,256K,"Text, Image",95fbaba894b5,5 months ago
+qwen3.5:0.8b-mxfp8,MLX 1.2GB,256K,"Text, Image",12f40a7f8473,2 days ago
+qwen3.5:0.8b-nvfp4,MLX 1.0GB,256K,"Text, Image",6d2b253cfc04,5 months ago
+qwen3.5:0.8b-q8_0,1.0GB,256K,"Text, Image",f3817196d142,6 months ago
+qwen3.5:0.8b-bf16,1.8GB,256K,"Text, Image",81a0b6550a2d,5 months ago
+qwen3.5:2b-mlx,MLX 3.1GB,256K,"Text, Image",9dd89c688f18,2 days ago
+qwen3.5:2b-mlx-bf16,MLX 4.4GB,256K,"Text, Image",1bd0618256e3,5 months ago
+qwen3.5:2b-mxfp8,MLX 3.1GB,256K,"Text, Image",9dd89c688f18,2 days ago
+qwen3.5:2b-nvfp4,MLX 2.5GB,256K,"Text, Image",0ab1f7a1e882,5 months ago
+qwen3.5:2b-q4_K_M,1.9GB,256K,"Text, Image",124a03c34777,6 months ago
+qwen3.5:2b-q8_0,2.7GB,256K,"Text, Image",324d162be6ca,6 months ago
+qwen3.5:2b-bf16,4.6GB,256K,"Text, Image",64148169aba8,5 months ago
+qwen3.5:4b-mlx,MLX 4.0GB,256K,"Text, Image",61aa3858e9d3,3 months ago
+qwen3.5:4b-mlx-bf16,MLX 9.1GB,256K,"Text, Image",7a3f49fa6b40,5 months ago
+qwen3.5:4b-mxfp8,MLX 5.6GB,256K,"Text, Image",77653d4d1b88,2 days ago
+qwen3.5:4b-nvfp4,MLX 4.0GB,256K,"Text, Image",61aa3858e9d3,5 months ago
+qwen3.5:4b-q4_K_M,3.4GB,256K,"Text, Image",2a654d98e6fb,6 months ago
+qwen3.5:4b-q8_0,5.3GB,256K,"Text, Image",8722f47c2791,6 months ago
+qwen3.5:4b-bf16,9.3GB,256K,"Text, Image",d7207ebcf0be,5 months ago
+qwen3.5:9b-mlx,MLX 8.9GB,256K,"Text, Image",203e30078279,3 months ago
+qwen3.5:9b-mlx-bf16,MLX 19GB,256K,"Text, Image",1adfd61eea4f,5 months ago
+qwen3.5:9b-mxfp8,MLX 11GB,256K,"Text, Image",19c108424cec,2 days ago
+qwen3.5:9b-nvfp4,MLX 8.9GB,256K,"Text, Image",203e30078279,5 months ago
+qwen3.5:9b-q4_K_M,6.6GB,256K,"Text, Image",6488c96fa5fa,6 months ago
+qwen3.5:9b-q8_0,11GB,256K,"Text, Image",441ec31e4d2a,6 months ago
+qwen3.5:9b-bf16,19GB,256K,"Text, Image",df2b035304ec,5 months ago
+qwen3.5:27b-coding-mxfp8,MLX 30GB,256K,"Text, Image",cbcaee837654,2 days ago
+qwen3.5:27b-coding-nvfp4,MLX 20GB,256K,"Text, Image",d57ac1bd5340,5 months ago
+qwen3.5:27b-coding-bf16,55GB,256K,"Text, Image",0a4075181a1f,5 months ago
+qwen3.5:27b-int4,16GB,256K,"Text, Image",06964f7d5387,5 months ago
+qwen3.5:27b-int8,30GB,256K,"Text, Image",be0e0062ecdc,5 months ago
+qwen3.5:27b-mlx,MLX 20GB,256K,"Text, Image",41eb9db48b39,3 months ago
+qwen3.5:27b-mlx-bf16,MLX 55GB,256K,"Text, Image",821db087c439,5 months ago
+qwen3.5:27b-mxfp8,MLX 30GB,256K,"Text, Image",3ce4a5647be1,2 days ago
+qwen3.5:27b-nvfp4,MLX 20GB,256K,"Text, Image",41eb9db48b39,5 months ago
+qwen3.5:27b-q4_K_M,17GB,256K,"Text, Image",7653528ba5cb,6 months ago
+qwen3.5:27b-q8_0,30GB,256K,"Text, Image",728880d65c32,6 months ago
+qwen3.5:27b-bf16,56GB,256K,"Text, Image",f9ebcd0c9957,5 months ago
+qwen3.5:35b-a3b,24GB,256K,"Text, Image",3460ffeede54,6 months ago
+qwen3.5:35b-a3b-coding-mxfp8,MLX 37GB,256K,"Text, Image",058a0c9f18b2,2 days ago
+qwen3.5:35b-a3b-coding-nvfp4,MLX 22GB,256K,"Text, Image",6e73b30f8f1c,5 months ago
+qwen3.5:35b-a3b-coding-bf16,70GB,256K,"Text, Image",37b8d012f58e,5 months ago
+qwen3.5:35b-a3b-int4,20GB,256K,"Text, Image",39a73d8a124d,5 months ago
+qwen3.5:35b-a3b-int8,38GB,256K,"Text, Image",fc565b23657b,5 months ago
+qwen3.5:35b-a3b-mlx-bf16,MLX 70GB,256K,"Text, Image",f6555d933b86,5 months ago
+qwen3.5:35b-a3b-mxfp8,MLX 37GB,256K,"Text, Image",16b03b99d8bb,2 days ago
+qwen3.5:35b-a3b-nvfp4,MLX 22GB,256K,"Text, Image",fb2d58ab6d45,5 months ago
+qwen3.5:35b-a3b-q4_K_M,24GB,256K,"Text, Image",3460ffeede54,6 months ago
+qwen3.5:35b-a3b-q8_0,39GB,256K,"Text, Image",655d273ede3a,6 months ago
+qwen3.5:35b-a3b-bf16,72GB,256K,"Text, Image",85eaedff99c3,5 months ago
+qwen3.5:35b-mlx,MLX 22GB,256K,"Text, Image",fb2d58ab6d45,3 months ago
+qwen3.5:122b-a10b,81GB,256K,"Text, Image",8b9d11d807c5,6 months ago
+qwen3.5:122b-a10b-q4_K_M,81GB,256K,"Text, Image",8b9d11d807c5,6 months ago
+qwen3.5:397b-cloud,,256K,"Text, Image",a7bf6f7891c3,6 months ago

@@ -1,0 +1,10 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+nemotron-3-nano:latest,24GB,1M,Text,b725f1117407,8 months ago
+nemotron-3-nano:4b,2.8GB,256K,Text,6cc467f05439,5 months ago
+nemotron-3-nano:30b,24GB,1M,Text,b725f1117407,8 months ago
+nemotron-3-nano:4b-q8_0,4.2GB,256K,Text,c534497d032c,5 months ago
+nemotron-3-nano:4b-bf16,8.0GB,256K,Text,4bc6e34d03fb,5 months ago
+nemotron-3-nano:30b-a3b-q4_K_M,24GB,1M,Text,b725f1117407,8 months ago
+nemotron-3-nano:30b-a3b-q8_0,34GB,1M,Text,a98df31bcc4a,8 months ago
+nemotron-3-nano:30b-a3b-fp16,63GB,1M,Text,69eb03c51301,8 months ago
+nemotron-3-nano:30b-cloud,,1M,Text,01d0d069a149,8 months ago

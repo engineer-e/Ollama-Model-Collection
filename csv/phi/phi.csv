@@ -1,0 +1,19 @@
+Name,Size / Usage,Context,Input
+phi:latest,1.6GB,2K,Text
+phi:chat,1.6GB,2K,Text
+phi:2.7b,1.6GB,2K,Text
+phi:2.7b-chat-v2-q2_K,1.2GB,2K,Text
+phi:2.7b-chat-v2-q3_K_S,1.3GB,2K,Text
+phi:2.7b-chat-v2-q3_K_M,1.5GB,2K,Text
+phi:2.7b-chat-v2-q3_K_L,1.6GB,2K,Text
+phi:2.7b-chat-v2-q4_0,1.6GB,2K,Text
+phi:2.7b-chat-v2-q4_1,1.8GB,2K,Text
+phi:2.7b-chat-v2-q4_K_S,1.6GB,2K,Text
+phi:2.7b-chat-v2-q4_K_M,1.8GB,2K,Text
+phi:2.7b-chat-v2-q5_0,1.9GB,2K,Text
+phi:2.7b-chat-v2-q5_1,2.1GB,2K,Text
+phi:2.7b-chat-v2-q5_K_S,1.9GB,2K,Text
+phi:2.7b-chat-v2-q5_K_M,2.1GB,2K,Text
+phi:2.7b-chat-v2-q6_K,2.3GB,2K,Text
+phi:2.7b-chat-v2-q8_0,3.0GB,2K,Text
+phi:2.7b-chat-v2-fp16,5.6GB,2K,Text

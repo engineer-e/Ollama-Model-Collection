@@ -1,0 +1,17 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+granite-embedding:30m,63MB,512,Text,96e3c340e259,1 year ago
+granite-embedding:107m,221MB,512,Text,a15914a3ec39,1 year ago
+granite-embedding:125m,251MB,512,Text,da69d7b4a7fe,1 year ago
+granite-embedding:278m,563MB,512,Text,5125e69d1c0f,1 year ago
+granite-embedding:30m-english-q4_K_M,30MB,512,Text,772f63cb8959,1 year ago
+granite-embedding:30m-english-q8_0,34MB,512,Text,b00a80937371,1 year ago
+granite-embedding:30m-english-f16,63MB,512,Text,96e3c340e259,1 year ago
+granite-embedding:107m-multilingual-q4_K_M,117MB,512,Text,68dc42680429,1 year ago
+granite-embedding:107m-multilingual-q8_0,121MB,512,Text,4b7625a1e347,1 year ago
+granite-embedding:107m-multilingual-f16,221MB,512,Text,a15914a3ec39,1 year ago
+granite-embedding:125m-english-q4_K_M,88MB,512,Text,9f919db9aa33,1 year ago
+granite-embedding:125m-english-q8_0,135MB,512,Text,2375dd6b7253,1 year ago
+granite-embedding:125m-english-f16,251MB,512,Text,da69d7b4a7fe,1 year ago
+granite-embedding:278m-multilingual-q4_K_M,219MB,512,Text,8afb0d9ae98c,1 year ago
+granite-embedding:278m-multilingual-q8_0,303MB,512,Text,c85c901b9611,1 year ago
+granite-embedding:278m-multilingual-f16,563MB,512,Text,5125e69d1c0f,1 year ago

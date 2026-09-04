@@ -1,0 +1,6 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+mistral-small3.2:latest,15GB,128K,"Text, Image",5a408ab55df5,1 year ago
+mistral-small3.2:24b,15GB,128K,"Text, Image",5a408ab55df5,1 year ago
+mistral-small3.2:24b-instruct-2506-q4_K_M,15GB,128K,"Text, Image",5a408ab55df5,1 year ago
+mistral-small3.2:24b-instruct-2506-q8_0,26GB,128K,"Text, Image",9b58e7bb625c,1 year ago
+mistral-small3.2:24b-instruct-2506-fp16,48GB,128K,"Text, Image",f904f36f6f02,1 year ago

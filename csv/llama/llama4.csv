@@ -1,0 +1,12 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+llama4:latest,67GB,10M,"Text, Image",bf31604e25c2,1 year ago
+llama4:maverick,245GB,1M,"Text, Image",b4832b93e292,1 year ago
+llama4:scout,67GB,10M,"Text, Image",bf31604e25c2,1 year ago
+llama4:16x17b,67GB,10M,"Text, Image",bf31604e25c2,1 year ago
+llama4:128x17b,245GB,1M,"Text, Image",b4832b93e292,1 year ago
+llama4:17b-maverick-128e-instruct-q4_K_M,245GB,1M,"Text, Image",b4832b93e292,1 year ago
+llama4:17b-maverick-128e-instruct-q8_0,428GB,1M,"Text, Image",7fb6f3e69a28,1 year ago
+llama4:17b-maverick-128e-instruct-fp16,803GB,1M,"Text, Image",c9a3a4d149af,1 year ago
+llama4:17b-scout-16e-instruct-q4_K_M,67GB,10M,"Text, Image",bf31604e25c2,1 year ago
+llama4:17b-scout-16e-instruct-q8_0,117GB,10M,"Text, Image",244249e6cd64,1 year ago
+llama4:17b-scout-16e-instruct-fp16,217GB,10M,"Text, Image",f390ec6c1a81,1 year ago

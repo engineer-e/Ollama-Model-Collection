@@ -1,0 +1,5 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+functiongemma:latest,301MB,32K,Text,7c19b650567a,8 months ago
+functiongemma:270m,301MB,32K,Text,7c19b650567a,8 months ago
+functiongemma:270m-it-q8_0,301MB,32K,Text,7c19b650567a,8 months ago
+functiongemma:270m-it-fp16,552MB,32K,Text,ce6e8a1097cd,8 months ago

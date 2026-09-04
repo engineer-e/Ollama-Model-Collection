@@ -1,0 +1,27 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+gemma3:latest,3.3GB,128K,"Text, Image",a2af6cc3eb7f,1 year ago
+gemma3:270m,292MB,32K,Text,e7d36fb2c3b3,1 year ago
+gemma3:1b,815MB,32K,Text,8648f39daa8f,1 year ago
+gemma3:4b,3.3GB,128K,"Text, Image",a2af6cc3eb7f,1 year ago
+gemma3:12b,8.1GB,128K,"Text, Image",f4031aab637d,1 year ago
+gemma3:27b,17GB,128K,"Text, Image",a418f5838eaf,1 year ago
+gemma3:270m-it-qat,241MB,32K,Text,b16d6d39dfbd,1 year ago
+gemma3:270m-it-q8_0,292MB,32K,Text,e7d36fb2c3b3,1 year ago
+gemma3:270m-it-fp16,543MB,32K,Text,a44af03dd6b3,1 year ago
+gemma3:270m-it-bf16,543MB,32K,Text,dc598b095ea6,1 year ago
+gemma3:1b-it-qat,1.0GB,32K,Text,b491bd3989c6,1 year ago
+gemma3:1b-it-q4_K_M,815MB,32K,Text,8648f39daa8f,1 year ago
+gemma3:1b-it-q8_0,1.1GB,32K,Text,0fdb9c7fefee,1 year ago
+gemma3:1b-it-fp16,2.0GB,32K,Text,16d00907691b,1 year ago
+gemma3:4b-it-qat,4.0GB,128K,"Text, Image",d01ad0579247,1 year ago
+gemma3:4b-it-q4_K_M,3.3GB,128K,"Text, Image",a2af6cc3eb7f,1 year ago
+gemma3:4b-it-q8_0,5.0GB,128K,"Text, Image",2376388dec16,1 year ago
+gemma3:4b-it-fp16,8.6GB,128K,"Text, Image",c4da438ae756,1 year ago
+gemma3:12b-it-qat,8.9GB,128K,"Text, Image",5d4fa005e7bb,1 year ago
+gemma3:12b-it-q4_K_M,8.1GB,128K,"Text, Image",f4031aab637d,1 year ago
+gemma3:12b-it-q8_0,13GB,128K,"Text, Image",997a7c2c0975,1 year ago
+gemma3:12b-it-fp16,24GB,128K,"Text, Image",6b1ba564b78d,1 year ago
+gemma3:27b-it-qat,18GB,128K,"Text, Image",29eb0b9aeda3,1 year ago
+gemma3:27b-it-q4_K_M,17GB,128K,"Text, Image",a418f5838eaf,1 year ago
+gemma3:27b-it-q8_0,30GB,128K,"Text, Image",273cbcd67032,1 year ago
+gemma3:27b-it-fp16,55GB,128K,"Text, Image",b7d58e2e179e,1 year ago

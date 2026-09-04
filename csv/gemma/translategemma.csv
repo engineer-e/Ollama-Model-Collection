@@ -1,0 +1,14 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+translategemma:latest,3.3GB,128K,"Text, Image",c49d986b0764,7 months ago
+translategemma:4b,3.3GB,128K,"Text, Image",c49d986b0764,7 months ago
+translategemma:12b,8.1GB,128K,"Text, Image",c2f9a9ca1ec7,7 months ago
+translategemma:27b,17GB,128K,"Text, Image",21b597a243ec,7 months ago
+translategemma:4b-it-q4_K_M,3.3GB,128K,"Text, Image",c49d986b0764,7 months ago
+translategemma:4b-it-q8_0,4.9GB,128K,"Text, Image",69729cbbfd35,7 months ago
+translategemma:4b-it-bf16,8.6GB,128K,"Text, Image",ff7a6d70870f,7 months ago
+translategemma:12b-it-q4_K_M,8.1GB,128K,"Text, Image",c2f9a9ca1ec7,7 months ago
+translategemma:12b-it-q8_0,13GB,128K,"Text, Image",48057379bc4d,7 months ago
+translategemma:12b-it-bf16,24GB,128K,"Text, Image",7dc7429cc8b2,7 months ago
+translategemma:27b-it-q4_K_M,17GB,128K,"Text, Image",21b597a243ec,7 months ago
+translategemma:27b-it-q8_0,30GB,128K,"Text, Image",b5b3e0d68687,7 months ago
+translategemma:27b-it-bf16,55GB,128K,"Text, Image",0718798ae6f3,7 months ago

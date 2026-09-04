@@ -1,0 +1,10 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+gemma3n:latest,7.5GB,32K,Text,15cb39fd9394,1 year ago
+gemma3n:e2b,5.6GB,32K,Text,719372f8c7de,1 year ago
+gemma3n:e4b,7.5GB,32K,Text,15cb39fd9394,1 year ago
+gemma3n:e2b-it-q4_K_M,5.6GB,32K,Text,719372f8c7de,1 year ago
+gemma3n:e2b-it-q8_0,6.6GB,32K,Text,11d9a1ddb266,1 year ago
+gemma3n:e2b-it-fp16,8.9GB,32K,Text,c202cf857d68,1 year ago
+gemma3n:e4b-it-q4_K_M,7.5GB,32K,Text,15cb39fd9394,1 year ago
+gemma3n:e4b-it-q8_0,9.5GB,32K,Text,8289357f2878,1 year ago
+gemma3n:e4b-it-fp16,14GB,32K,Text,153df1d47c19,1 year ago

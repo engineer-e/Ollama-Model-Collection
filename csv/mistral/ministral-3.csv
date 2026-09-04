@@ -1,0 +1,14 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+ministral-3:latest,6.0GB,256K,"Text, Image",1922accd5827,8 months ago
+ministral-3:3b,3.0GB,256K,"Text, Image",f04aa1c738f6,8 months ago
+ministral-3:8b,6.0GB,256K,"Text, Image",1922accd5827,8 months ago
+ministral-3:14b,9.1GB,256K,"Text, Image",4760c35aeb9d,8 months ago
+ministral-3:3b-instruct-2512-q4_K_M,3.0GB,256K,"Text, Image",f04aa1c738f6,8 months ago
+ministral-3:3b-instruct-2512-q8_0,4.5GB,256K,"Text, Image",c269e5748d11,8 months ago
+ministral-3:3b-instruct-2512-fp16,7.7GB,256K,"Text, Image",c3575e1e54be,8 months ago
+ministral-3:8b-instruct-2512-q4_K_M,6.0GB,256K,"Text, Image",1922accd5827,8 months ago
+ministral-3:8b-instruct-2512-q8_0,9.9GB,256K,"Text, Image",51a27715a326,8 months ago
+ministral-3:8b-instruct-2512-fp16,18GB,256K,"Text, Image",1db367e98f75,8 months ago
+ministral-3:14b-instruct-2512-q4_K_M,9.1GB,256K,"Text, Image",4760c35aeb9d,8 months ago
+ministral-3:14b-instruct-2512-q8_0,15GB,256K,"Text, Image",e189ca022343,8 months ago
+ministral-3:14b-instruct-2512-fp16,28GB,256K,"Text, Image",ba5a5da1e89b,8 months ago

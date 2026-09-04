@@ -1,0 +1,12 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+nemotron-3.5-lightning:latest,25GB,1M,Text,e7a64ff15fb1,3 weeks ago
+nemotron-3.5-lightning:30b,25GB,1M,Text,e7a64ff15fb1,3 weeks ago
+nemotron-3.5-lightning:30b-a3b,25GB,1M,Text,e7a64ff15fb1,3 weeks ago
+nemotron-3.5-lightning:30b-a3b-mlx,MLX 23GB,256K,Text,8b1474be6e54,3 weeks ago
+nemotron-3.5-lightning:30b-a3b-mlx-bf16,MLX 66GB,256K,Text,7bf11b5991ed,3 weeks ago
+nemotron-3.5-lightning:30b-a3b-mxfp8,MLX 34GB,256K,Text,9dad1618f1ac,3 days ago
+nemotron-3.5-lightning:30b-a3b-nvfp4,MLX 23GB,256K,Text,8b1474be6e54,3 weeks ago
+nemotron-3.5-lightning:30b-a3b-q4_K_M,25GB,1M,Text,e7a64ff15fb1,3 weeks ago
+nemotron-3.5-lightning:30b-a3b-q8_0,35GB,1M,Text,9983b24ee511,3 weeks ago
+nemotron-3.5-lightning:30b-a3b-bf16,66GB,1M,Text,721c64cd61ac,3 weeks ago
+nemotron-3.5-lightning:30b-mlx,MLX 23GB,256K,Text,8b1474be6e54,3 weeks ago

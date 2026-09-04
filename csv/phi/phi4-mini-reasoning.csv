@@ -1,0 +1,6 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+phi4-mini-reasoning:latest,3.2GB,128K,Text,3ca8c2865ce9,1 year ago
+phi4-mini-reasoning:3.8b,3.2GB,128K,Text,3ca8c2865ce9,1 year ago
+phi4-mini-reasoning:3.8b-q4_K_M,3.2GB,128K,Text,3ca8c2865ce9,1 year ago
+phi4-mini-reasoning:3.8b-q8_0,4.6GB,4K,Text,e3fffa9f7d91,1 year ago
+phi4-mini-reasoning:3.8b-fp16,7.7GB,4K,Text,591788476176,1 year ago

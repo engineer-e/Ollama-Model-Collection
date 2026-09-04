@@ -1,0 +1,10 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+qwen3-coder:latest,19GB,256K,Text,06c1097efce0,11 months ago
+qwen3-coder:30b,19GB,256K,Text,06c1097efce0,11 months ago
+qwen3-coder:480b,290GB,256K,Text,72b144baf727,11 months ago
+qwen3-coder:30b-a3b-q4_K_M,19GB,256K,Text,06c1097efce0,11 months ago
+qwen3-coder:30b-a3b-q8_0,32GB,256K,Text,7b438a19895a,11 months ago
+qwen3-coder:30b-a3b-fp16,61GB,256K,Text,0d2a10a65d2f,11 months ago
+qwen3-coder:480b-a35b-q4_K_M,290GB,256K,Text,72b144baf727,11 months ago
+qwen3-coder:480b-a35b-q8_0,510GB,256K,Text,459cea34ff3a,11 months ago
+qwen3-coder:480b-a35b-fp16,960GB,256K,Text,23af91755def,11 months ago

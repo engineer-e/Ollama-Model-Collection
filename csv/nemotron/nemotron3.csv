@@ -1,0 +1,5 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+nemotron3:33b,28GB,128K,"Text, Image",,
+nemotron3:33b-q8,36GB,128K,"Text, Image",,
+nemotron3:33b-q4_K_M,28GB,128K,"Text, Image",,
+nemotron3:33b-bf16,66GB,128K,"Text, Image",,

@@ -1,0 +1,8 @@
+Name,Size / Usage,Context,Input,Digest,Updated
+nemotron-3-super:latest,87GB,256K,Text,95acc78b3ffd,5 months ago
+nemotron-3-super:cloud,,256K,Text,be3943c5a818,5 months ago
+nemotron-3-super:120b,87GB,256K,Text,95acc78b3ffd,5 months ago
+nemotron-3-super:120b-a12b,87GB,256K,Text,95acc78b3ffd,5 months ago
+nemotron-3-super:120b-a12b-q4_K_M,87GB,256K,Text,95acc78b3ffd,5 months ago
+nemotron-3-super:120b-a12b-q8_0,132GB,256K,Text,b935f8ec0f40,5 months ago
+nemotron-3-super:120b-a12b-bf16,247GB,256K,Text,c14fcbcdc70e,5 months ago
