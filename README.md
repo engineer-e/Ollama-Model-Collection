@@ -46,4 +46,6 @@ With **8 GB RAM** and an older **GT 710**, the system is most suitable for **sma
 # LLM Models
 
 1. [IBM - Granite](csv/granite/granite_response.ipynb) 
+2. [Alibaba Group - Qwen](csv/qwen/qwen_response.ipynb)
+
 
