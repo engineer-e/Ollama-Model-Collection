@@ -1,0 +1,2298 @@
+Qwen-3D: A Generalist 3D Vision-Language Model for Spatial Understanding
+Lucy Lin†, Ayush Jain†, Yifan Liu, Katerina Fragkiadaki
+Carnegie Mellon University
+{lucylin,ayushj2,yifanliu,kfragki2}@andrew.cmu.edu
+Abstract
+Large Multimodal Models (LMMs) have achieved remark-
+able success on images and short videos, yet scaling them
+to long videos remains challenging due to frame-centric to-
+kenization and limited context windows. 3D geometry pro-
+vides a natural compression mechanism for visual streams:
+depth and camera pose enable observations from multiple
+views and time steps to be fused into a persistent, world-
+aligned representation. While recent 3D LMMs leverage
+geometry-aware representations to improve spatial reason-
+ing, they continue to lag behind specialist 3D perception
+systems on grounding and segmentation tasks.
+We ar-
+gue that a key limitation is geometry-aware decoding: ex-
+isting methods communicate 3D predictions through lan-
+guage tokens, proposal selection, or lightweight grounding
+queries, creating a bottleneck between language reasoning
+and dense geometric prediction. Building on these insights,
+we introduce Qwen-3D, a geometry-aware LMM that com-
+presses visual information within the Qwen backbone using
+multi-view geometric cues, enabling efficient long-horizon
+visual reasoning over static scenes. Qwen-3D augments vi-
+sual tokens with 3D Rotary Positional Embeddings, allow-
+ing attention to operate directly in 3D scene space rather
+than across independent image frames and thereby facilitat-
+ing scalable cross-view and temporal reasoning. To bridge
+language and geometry, Qwen-3D incorporates a query-
+based segmentation decoder that grounds language directly
+in the underlying 3D scene representation, unifying refer-
+ential grounding, instance segmentation, and visual ques-
+tion answering across both images and videos. Across a
+diverse set of benchmarks, Qwen-3D surpasses existing 3D
+LMMs and outperforms several large proprietary 2D mod-
+els. Notably, Qwen-3D achieves these improvements while
+maintaining strong performance on standard 2D vision–
+language benchmarks by jointly training on 2D and 3D
+data. Our code and checkpoints can be found at the project
+website https://qwen-3d.github.io/.
+†Equal contribution
+1. Introduction
+Current Vision–Language Models (VLMs) perform well on
+images and short video clips, but struggle with long multi-
+view video streams. Processing long sequences is compu-
+tationally expensive due to the quadratic cost of attention,
+and limited context windows prevent long-range spatio-
+temporal reasoning across frames. Multi-view 3D geom-
+etry, in the form of depth and camera poses, offers a princi-
+pled alternative, allowing video frames to be mapped into a
+shared 3D coordinate system. This enables compression of
+long multi-view streams into compressed persistent scene
+representations where temporally distant frames may corre-
+spond to nearby 3D locations.
+Existing approaches to integrating such 3D information
+compression into VLMs in order to improve their long
+range reasoning abilities generally follow one of two dis-
+tinct paradigms.
+One line of work introduces 3D point
+clouds as auxiliary inputs to the model [11, 19, 20], ei-
+ther alongside or in place of multi-view images.
+While
+these approaches expose explicit geometric structure, they
+treat point clouds as a modality separate from the visual
+tokens, overlooking the fact that point cloud features are
+inherently aligned with image features with corresponding
+depth.
+The second line of work integrates geometry di-
+rectly into the visual token representation. Methods such as
+LLaVA-3D[58] and Video-3D-LLM[57] modify positional
+encodings such that multi-view image tokens are embedded
+according to their 3D world coordinates rather than their
+2D image-plane positions. This approach allows the model
+to reason over multi-view observations in a shared spatial
+coordinate system while maintaining the strong visual rep-
+resentations learned by large VLM backbones.
+Despite these advances, existing 3D large multimodal
+models (LMMs) still lag substantially behind specialist 3D
+perception systems. Dedicated models trained for detec-
+tion, segmentation, and grounding continue to outperform
+general-purpose 3D LMMs by a large margin [24, 25, 59].
+Moreover, most current 3D LMMs do not even attempt stan-
+dard 3D perception tasks such as object detection on Scan-
+Net [14, 41]. The only exception, Grounded-3D-LLM [12],
+achieves less than half the performance of state-of-the-art
+arXiv:2608.02980v1  [cs.CV]  4 Aug 2026
+2D VLMs
+Qwen-3D
+3D Tokens 
+Q: “Facing the beds you want 
+the front pillow on the left bed”
+3D Inst. 
+Segmentation
+“Q: What is the color of the 
+traffic light in this scenes?”
+A: “Green”
+Q: “Little girl sitting 
+with toy in her hand”
+A: “Three tables”
+3D PE
+VL
+Attns
+“Q: How many tables 
+are here?”
+VL
+Attns
+Mask 
+Decoder
+Text 
+Answer
+Q:
+Expensive 
+attention; No 3D-
+Awareness
+2D Inst 
+Segmentation
+3D Ref. Grounding
+2D VQA
+2D Ref. 
+Grounding
+Q: ”Sofa, pillow, bed, 
+chair…"
+Q: ”Sofa, pillow, bed, 
+chair…”
+3D VQA
+“Q: What color is the water 
+counter next to the door?”
+A: “White”
+Figure 1. Qwen-3D performs attention directly in 3D world space rather than over independent image frames. Given multi-view
+RGB observations, depth, and camera poses, Qwen-3D maps visual tokens into a shared 3D coordinate system and applies geometry-aware
+attention through 3D Rotary Positional Embeddings. The model jointly supports language reasoning, 2D grounding, and 3D grounding
+within a unified architecture, achieving state-of-the-art performance across a broad range of vision–language and 3D understanding bench-
+marks.
+3D detectors.
+We argue that this gap stems from a fundamental chal-
+lenge in adapting language-centric architectures to 3D per-
+ception. While large language models excel at reasoning
+over discrete tokens, dense 3D grounding requires predict-
+ing spatially precise outputs in a continuous world coor-
+dinate system. Unlike images, which provide a canonical
+pixel coordinate frame, 3D scenes admit no universal refer-
+ence frame: the same object may appear at entirely different
+coordinates across scans and environments. As a result, au-
+toregressively decoding 3D boxes, coordinates, or masks as
+language tokens is an unnatural interface for 3D perception.
+Existing 3D LMMs typically address this problem either
+by representing grounding outputs through text generation
+or by attaching lightweight grounding modules that com-
+municate with the backbone through a small set of query
+vectors (Figure 2). While these approaches preserve the
+reasoning capabilities of the underlying language model,
+they create a severe information bottleneck between high-
+capacity visual representations and the dense geometric pre-
+dictions required for grounding. Consequently, current 3D
+LMMs improve high-level spatial reasoning but remain sig-
+nificantly weaker than specialist systems on core 3D per-
+ception tasks. This observation raises an important open
+question: how should a large multimodal model interface
+with a 3D grounding system?
+We introduce Qwen-3D, a geometry-aware 3D LMM
+that extends the Qwen family of models [5] with explicit
+mechanisms for multi-view reasoning and object ground-
+ing (Figure 1). Rather than treating grounding as language
+generation or restricting communication through a small
+set of latent queries, we propose a unified architecture in
+which the language model and grounding decoder share
+dense visual representations. This design enables rich bidi-
+rectional interactions between language reasoning and ge-
+ometric perception, substantially improving grounding ac-
+curacy while preserving the general-purpose capabilities of
+the multimodal backbone. Built on the strong 2D founda-
+tion of Qwen2.5-VL, Qwen-3D integrates 3D structure di-
+rectly into the vision–language backbone. First, we lever-
+age geometric information to compress visual tokens within
+the backbone, merging tokens originating from nearby 3D
+locations. This enables efficient reasoning over long multi-
+view videos while preserving spatial consistency across
+views. Second, we introduce 3D Rotary Positional Embed-
+dings to the Qwen backbone, allowing attention within the
+backbone to operate in a geometry-aware coordinate system
+and improving cross-view spatial reasoning.
+Across a wide range of 3D grounding benchmarks,
+Qwen-3D outperforms both proprietary 2D VLMs and the
+strongest existing 3D LMMs while maintaining strong per-
+formance on 2D tasks. Compared to the previous 3D LMM
+state-of-the-art, Qwen-3D improves 3D visual grounding
+by 4% Acc@25, surpasses the best single-stage 3D LMMs
+by 12% Acc@25, and increases 3D instance segmenta-
+tion accuracy by 13% mAP. The model also achieves
+Visual Tokenizer
+“[1.2, 0.8, 0.9, 2.0, 1.3, 1.2]”
+Box Decoder
+Input Text
+VL Attns.
+Text Tokenizer
+(i) Text decoders
+Visual Tokenizer
+Input Text
+VL Attns.
+Text Tokenizer
+(ii)  Proposal Selector Decoders
+Box Tokenizer
+<select 
+ box>
+ith
+Visual Tokenizer
+Input Text
+VL Attns.
+Text Tokenizer
+Visual Tokenizer
+(iii)  <REF> Token Decoders
+Visual Tokenizer
+Input Text
+VL Attns.
+Text Tokenizer
+(iv) Qwen-3D (ours)
+Mask Decoder
+Figure 2. Decoding object information in 3D LMMs. From left to right: (i) Text-space decoding, as in 3D-LLM [17], where object
+coordinates or bounding boxes are generated autoregressively as language tokens. Unlike images, 3D scenes do not admit a canonical
+world coordinate frame, making dense spatial prediction through text generation inherently ambiguous. (ii) Proposal-selection decoding,
+as in Video-3D-LLM [19, 20, 57], where the model selects from a predefined set of object proposals. This approach is fundamentally limited
+by proposal quality and cannot localize objects absent from the proposal set. (iii) Special-token decoding, as in LLaVA-3D [12, 58], where
+grounding information is communicated through a single dedicated token. While effective for coarse language-to-vision communication,
+this creates a severe information bottleneck between language reasoning and dense geometric prediction. (iv) Qwen-3D (ours), which
+directly connects contextualized vision–language features from the backbone to a mask-based segmentation decoder. By sharing dense
+visual representations between language reasoning and geometric prediction, Qwen-3D grounds multiple referential expressions directly
+in the underlying scene representation, enabling high-quality 2D and 3D grounding and segmentation.
+competitive performance on 3D visual question answering
+while preserving the strong 2D capabilities of its back-
+bone.
+Furthermore, Qwen-3D substantially narrows the
+gap between general-purpose 3D LMMs and specialist
+3D grounding models on in-domain benchmarks, while
+significantly outperforming specialist methods on out-of-
+distribution 3D scenes and language instructions. Following
+prior 3D LMMs such as LLaVA-3D [58] and Grounded-3D-
+LLM [12], we characterize Qwen-3D as a vision–language
+generalist based on its broad multi-modal 2D and 3D capa-
+bilities, while further broadening the evaluation scope be-
+yond these baselines to include 3D object detection, text-
+only baselines, and generalization across unseen distribu-
+tions.
+Contributions. Our contributions are as follows:
+• A geometry-aware VLM backbone that integrates multi-
+view structure with 3D rotary positional embeddings and
+geometry-based token compression.
+• A unified 3D grounding architecture with a query-based
+segmentation decoder that grounds language directly in
+world space and shares full visual token representations
+with the VLM backbone.
+• A general-purpose 3D multimodal training framework
+that jointly learns from 2D and 3D data, preserving strong
+vision–language capabilities while improving 3D spatial
+reasoning and grounding.
+• State-of-the-art performance among 3D-LMM methods
+across 3D benchmarks, improving 3D visual grounding
+by 4% and instance segmentation by 13%, while main-
+taining strong 2D multimodal performance.
+We make our code publicly available at https://
+qwen-3d.github.io/.
+2. Related Work
+Building upon the rapid progress of 2D Large Multimodal
+Models [5, 39, 45], recent work has focused on extending
+these models to understand 3D scenes. Existing approaches
+can be grouped into four main categories:
+(a) 3D point cloud encoders trained from scratch. Meth-
+ods such as LL3DA [11], Scene-LLM [16], and Grounded-
+3D-LLM [12] augment multi-view image streams with ex-
+plicit 3D point cloud encoders. The resulting 3D features
+are projected into an LLM backbone in addition to or as
+a replacement for 2D image features. These approaches,
+however, require large-scale point cloud–language datasets
+for alignment—an acute limitation given the scarcity of 3D
+data. In contrast, Qwen-3D builds upon powerful 2D pre-
+trained features and augments them with 3D information via
+positional encodings.
+(b) Learnable 3D feature compression.
+3D-LLM [17]
+uses Q-Former layers [31] to compress large numbers of
+2D foundation-model features into small sets of latent to-
+kens. In contrast, Qwen-3D performs multi-view feature
+compression in a parameter-free manner, directly guided by
+the 3D spatial layout of the tokens.
+(c) Object-centric approaches. Another line of work uses
+object-level features as input to the language model. Ap-
+proaches such as LEO [20] and ChatScene [19] first detect
+objects with off-the-shelf 2D or 3D detectors, pool features
+within detected regions, then feed these pooled features into
+their VLMs. These methods may yield structured object
+representations and improve grounding, but performance is
+fundamentally constrained by the robustness of the detec-
+tors themselves, which often struggle due to limited data
+diversity. In contrast, Qwen-3D is a single-stage model that
+directly grounds the language in the 3D visual stream.
+(d) Positional embedding adaptation. Several methods
+modify the positional embeddings of multi-view visual to-
+kens to better encode 3D spatial relationships [24, 25, 57,
+58]. Our model follows this general paradigm. Similar to
+these models, we incorporate 3D information via positional
+embeddings in the vision-language attention. We utilize 3D
+Rotary Positional Encoding for this purpose.
+Beyond spatial encoding, Qwen-3D also differs from
+prior work in how grounded outputs are decoded. We dis-
+cuss these grounding architectures in detail in the following
+section.
+3D Visual Grounding.
+Visual grounding—identifying
+objects referred to by language—is a fundamental capabil-
+ity for 3D vision–language systems. Early work [3, 23, 37]
+achieved strong performance by designing specialized ar-
+chitectures tailored for 3D grounding. Subsequent meth-
+ods [3, 25, 59, 60] unified grounding, question answer-
+ing, and captioning within a single framework. More re-
+cently, 3D LMMs have leveraged large-scale pretrained vi-
+sion–language features to assist grounding in 3D scenes;
+our method follows this paradigm. These newer approaches
+typically adopt one of three designs ( Fig. 2):
+(a) Direct bounding-box decoding. (Fig. 2a) Models such
+as 3D-LLM [17] directly decode 3D bounding boxes in the
+text space. However, they achieve low performance on lo-
+calization tasks, likely due to the scarcity of 3D-language
+data and the unstructured nature of 3D scenes.
+(b) Two-stage grounding via proposal selection. (Fig. 2b)
+Approaches such as Video-3D-LLM [57], ChatScene [19],
+and LEO [20] first run an object detector to generate candi-
+date proposals, then select the object that best matches the
+query. While this improves grounding robustness, perfor-
+mance is bottle-necked by the quality of the proposals.
+(c) Special token decoding. (Fig. 2c) Following the mask-
+as-embedding paradigm introduced by LISA [30], several
+methods decode a special grounding token (e.g. < REF >)
+and localize it using an explicit decoder head, as in LLaVA-
+3D [58], Grounded-3D-LLM [12], and Reason3D [22]. Es-
+sentially, the VLM heads and the decoder heads are only
+connected via the generated < REF > tokens. Although
+these methods can, in principle, ground multiple instances
+from a category, only Grounded-3D-LLM has been applied
+to 3D object detection.
+Rather than relying on text-space bounding boxes, pro-
+posal selection, or grounding tokens, Qwen-3D directly
+connects contextualized vision–language features from
+the VLM backbone to a mask-based segmentation de-
+coder ( Fig. 2d). This avoids the bottleneck imposed by
+the special token decoding and aligns more naturally with
+contemporary multi-object detection and segmentation ar-
+chitectures. As a result, Qwen-3D achieves state-of-the-art
+grounding and detection performance among 3D LMMs.
+3. Method
+Qwen-3D extends Qwen2.5-VL with three key components.
+First, we construct a geometry-aware scene representa-
+tion by projecting multi-view visual features into a shared
+3D coordinate system and compressing redundant observa-
+tions through voxel-based token merging. Second, we en-
+able geometry-aware reasoning by replacing image-plane
+positional encodings with 3D Rotary Positional Embed-
+dings, allowing attention to operate directly in world space.
+Third, we introduce a geometry-aware decoding mechanism
+that directly couples contextualized vision–language fea-
+tures with a mask-based grounding decoder, enabling dense
+language-guided prediction in both 2D and 3D. Figure 3
+provides an overview.
+3.1. Geometry-Aware Scene Representation
+Given a set of posed RGB-D observations, we first lift vi-
+sual features into a shared world coordinate system. Specif-
+ically, we use the Qwen2.5-VL vision encoder to extract
+image features and unproject their corresponding depth val-
+ues using camera intrinsics and poses, producing a set of
+aligned feature-coordinate pairs
+FC = {(fi, pi)}M
+i=1,
+where fi ∈RD denotes a visual feature and pi ∈R3 its
+corresponding world-space coordinate.
+Multi-view observations produce substantial redundancy
+because pixels from different views often correspond to the
+same physical location. Rather than reasoning over frame-
+level tokens, we aggregate observations directly in world
+space.
+Specifically, we apply voxel-based token merg-
+ing (with a voxel size of 5cm) to the feature-coordinate
+pairs, following [24, 25, 58]. This process discretizes the
+space and mean-pools the features and coordinates within
+each occupied voxel, yielding a compact, unordered set
+of geometry-aligned tokens FC′ = {(fj, pj)}M ′
+j=1, where
+M ′ ≤M.
+3.2. Geometry-Aware Vision–Language Attention
+Unlike conventional VLMs that perform attention over
+image-plane coordinates, Qwen-3D performs attention di-
+rectly in a shared world coordinate system.
+We use the
+Qwen2.5-VL language tokenizer [5] to embed the input
+natural language query into a sequence of tokens T
+=
+{tk}L
+k=1, where tk ∈RD and L is the number of tokens.
+The concatenated sequence of voxelized 3D point features
+and text tokens is then processed by N pre-trained multi-
+modal attention layers from Qwen2.5-VL. To enable spatial
+reasoning, we adapt Qwen’s Multimodal RoPE—originally
+designed for 1D or 2D grids—to encode 3D world coordi-
+nates (x, y, z), resulting in four positional components
+PE3D(p) = [PE(t); PE(x); PE(y); PE(z)].
+Qwen’s
+ViT
+2D Feature Maps
+Depth Maps
+Camera 
+3D Rotary PE
+Qwen’s
+VL
+Attns.
+LoRA
+🔥
+Q:“How many tables do we 
+have in this scene?”
+Multi-view Images
+Unproject 
+to
+3D
+Object 
+Queries
+Mask 
+Decoder
+Text 
+Decoder
+A: “Three 
+tables”
+Segmented 
+PointCloud
+Voxel Pooling
+3D XYZ
+Reshape
+to PC 
+Figure 3. Qwen-3D architecture. Given a natural language query and multi-view RGB-D inputs, the Qwen2.5-VL vision encoder extracts
+multi-view 2D features, unprojects them into world-space XYZ coordinates, and voxel-pools them to reduce spatial redundancy. The
+resulting tokens are fused with text via Qwen vision–language attention layers augmented with 3D Rotary Positional Embeddings and
+LoRA adaptation. Two task heads operate on the shared tokens: a 3D mask decoder for referential grounding and instance segmentation
+and a text decoder for open-ended question answering.
+where t represents a token’s temporal position in the se-
+quence and x, y, z denote 3D spatial coordinates. For text,
+the temporal ID increments sequentially (reducing to stan-
+dard 1D RoPE), while point cloud tokens share a constant
+temporal ID and use their world coordinates as spatial IDs.
+This embedding defines a rotation matrix R(p) ap-
+plied to query and key vectors before attention:
+˜q =
+R(pq)q, ˜k = R(pk)k
+Because 3D point clouds are permutation-invariant, we
+replace Qwen2.5-VL’s autoregressive causal masking with
+full attention over visual tokens. This improves 3D perfor-
+mance without degrading the backbone’s original capabili-
+ties. Further attention masking details and RoPE ablations
+are provided in the appendix and experiments section, re-
+spectively.
+3.3. Geometry-Aware Decoding
+Most existing 3D LMMs communicate grounding informa-
+tion through language tokens, proposal indices, or a small
+number of dedicated grounding tokens [12, 17, 57, 58].
+While these interfaces preserve the reasoning capabilities
+of the language model, they create a bottleneck between
+the rich visual representations learned by the backbone and
+the dense geometric predictions required for grounding. In-
+stead, we directly expose the full contextualized vision–
+language representation produced by the backbone to a
+mask-based segmentation decoder.
+Let
+V = {vi, i = 1..M ′}
+denote the contextualized visual tokens produced by the
+geometry-aware attention layers and
+T = {tj, j = 1..L}
+the corresponding language tokens.
+We instantiate (N)
+learnable object queries
+Q = {qn, n = 1..N}
+and process them through a Mask2Former-style de-
+coder [13]. Each decoder layer alternates between cross-
+attention to visual and language tokens, and self-attention
+among object queries. This allows each query to jointly
+reason about scene geometry and linguistic context while
+maintaining access to the full visual representation rather
+than a compressed grounding bottleneck.
+For all attention involving visual tokens, we use posi-
+tional embeddings corresponding to the underlying modal-
+ity (2D image coordinates or 3D world coordinates). Af-
+ter the final decoder layer, each object query predicts (i) a
+segmentation mask through a dot product with the updated
+visual tokens and (ii) a language grounding score through a
+dot product with the language tokens. This unified decoder
+naturally supports both 2D and 3D grounding. For referen-
+tial grounding, object queries learn to associate text spans
+with the corresponding visual regions. For question answer-
+ing and captioning, we use the original Qwen2.5-VL lan-
+guage head to perform next-token prediction over the con-
+textualized scene–language representation. This design en-
+ables dense geometric prediction while preserving the rea-
+soning capabilities of the underlying language model.
+Training Objectives
+We supervise Qwen-3D on three
+losses: (a) Mask loss: We assign predictions to ground-
+truth instances via Hungarian matching [8] and supervise
+matched masks with Binary Cross-Entropy (BCE) and Dice
+loss, following Mask2Former [13].
+(b) Text-span grounding loss: As in [23, 26, 32], we
+supervise each predicted text span with the corresponding
+matched ground-truth text span using Binary Cross Entropy
+loss. The queries that remain unmatched are supervised to
+predict low probability over all text tokens.
+(c) Text generation loss: For question-answering and cap-
+tioning tasks, we use a token-level cross-entropy on the gen-
+erated answer.
+Our complete loss is formulated as:
+L = αmask Lmask + αtextground Ltextground + αgen Lgen
+(1)
+where Lmask is the mask loss, Ltextground is the text
+grounding loss, Lgen is the text generation loss, and the α’s
+are the loss weight terms.
+3.4. Joint 2D-3D Training
+Qwen-3D shares parameters across 2D and 3D modalities,
+natively processing single or multiple RGB images as well
+as multi-view posed RGB-D frames. Within both the VLM
+backbone and the grounding decoder, 2D visual tokens are
+structured on a regular grid with 2D positional embeddings,
+whereas 3D inputs are represented as unordered point to-
+kens with 3D embeddings. To improve alignment between
+2D and 3D representations during training, we lift 2D data
+to 3D with probability p using reconstruction models such
+as MoGE [47] following UniVLG [25]. This enables a sin-
+gle set of parameters to operate seamlessly across images,
+videos, and reconstructed 3D scenes.
+Implementation
+Details
+Qwen-3D
+introduces
+only
+∼50M trainable parameters. We freeze the Qwen2.5-VL
+ViT backbone, fine-tune the vision–language attention
+layers via LoRA [18], and train the mask decoder from
+scratch. We train jointly on 2D and 3D datasets for 200k
+iterations (learning rate 10−4) on eight 48GB L40S GPUs
+with an effective batch size of 8, which takes approximately
+three days. Text-generation loss is applied exclusively to
+captioning and question-answering tasks; for detection, we
+construct prompts [23] by concatenating object class names
+(e.g., “find chair. table. sofa.”).
+Following [24, 25], we subsample 15 frames per scene
+during training. At inference time, we feed all posed RGB-
+D frames to our model (∼90 on average for ScanNet),
+which takes about 2 seconds per scene end-to-end.
+Our
+voxel-pooling strategy is critical for enabling this scalabil-
+ity - without it, the model runs out of memory even with
+substantially fewer input frames. We include additional hy-
+perparameters and an ablation of the test-time frame sub-
+sampling in the appendix.
+4. Experiments
+We evaluate Qwen-3D against existing LMMs and spe-
+cialized 3D vision models on visual grounding in both in-
+domain (Sec. 4.1) and out-of-domain settings (Sec. 4.2),
+along with 3D instance segmentation (Sec. 4.3) and 3D
+VQA (Sec. 4.4). We also assess how well Qwen-3D re-
+tains its 2D multimodal capabilities (Sec. 4.5) and ana-
+lyze which design choices most significantly impact perfor-
+mance (Sec. 4.6). Qualitative results, failure mode analy-
+sis, robustness to depth and camera pose noise, and perfor-
+mance on text-only tasks are provided in the appendix.
+Training Datasets We train jointly on a mixture of
+3D and 2D datasets to enable 3D comprehension while
+preserving
+the
+base
+model’s
+pre-trained
+capabilities.
+The 3D datasets include referential grounding (SR3D,
+NR3D [1], ScanRefer [10]), instance segmentation (Scan-
+Net200 [41], Matterport [9]), and question answering
+(ScanQA [4], SQA3D [38]). To mitigate catastrophic for-
+getting of Qwen’s original capabilities, we co-train on 2D
+datasets: referential grounding (RefCOCO, RefCOCO+,
+RefCOCOg [27]), instance segmentation (COCO [34]),
+captioning and QA (LLaVA-Instruct-150k [35]), and in-
+struction fine-tuning (Alpaca [44]).
+4.1. Evaluation on 3D Referential Grounding
+Datasets.
+We evaluate on the validation sets of three
+ScanNet-based [14] 3D referential grounding benchmarks:
+SR3D, NR3D [1], and ScanRefer [10]. While SR3D com-
+prises 88k synthetic utterances, NR3D (41k) and ScanRefer
+(51k) feature complex, human-annotated queries. Follow-
+ing recent work [3, 7, 24, 25], we operate directly on noisy,
+raw sensor RGB-D point clouds rather than clean, post-
+processed meshes. Although this setup introduces sensor-
+mesh misalignments that can degrade performance [24, 25],
+it better reflects practical embodied learning scenarios.
+Evaluation Metrics. We report standard Top-1 accuracy,
+where a prediction is correct if the highest-confidence pre-
+dicted bounding box achieves an Intersection over Union
+(IoU) with the ground-truth box above a threshold (0.25,
+0.5).
+Since our model predicts segmentation masks, we
+convert masks to bounding boxes by thresholding at their
+extreme corners.
+Baselines.
+Following prior work [57, 58], we compare
+Qwen-3D against state-of-the-art expert (non-LMM) and
+LLM-based approaches.
+Expert baselines include two-
+stage [59, 60] and single-stage [3, 25] methods.
+LLM-
+based baselines include: (i) two-stage models relying on
+detector proposals (LEO [20], Chat-Scene [19], Video-
+3D-LLM [57]); (ii) single-stage text-space decoders (3D-
+LLM [17]); and (iii) single-stage < REF > token de-
+coders (Grounded 3D-LLM [12], LLaVA-3D [58], Rea-
+son3D [22]). Unlike these, our single-stage method directly
+decodes segmentation masks by routing LMM backbone
+Table 1. Results on 3D Visual Grounding and VQA for both experts and LMMs.
+∗2D VLM numbers obtained from prior works
+[3, 36, 43, 56]
+ScanRefer
+ScanQA (Val)
+SQA3D (Test)
+Methods
+Acc
+@25
+Acc
+@50
+EM@1
+C
+M
+R
+EM@1
+BUTD-DETR [23]
+52.2
+39.8
+-
+-
+-
+-
+-
+ScanQA [4]
+-
+-
+23.5
+67.3
+13.6
+34.3
+-
+PQ3D [60]
+56.7
+51.8
+20.0
+65.2
+13.9
+-
+47.1
+Experts
+3D-VisTA [59]
+51.0
+46.2
+22.4
+69.6
+13.9
+35.7
+48.5
+ODIN [24]
+43.1
+33.4
+-
+-
+-
+-
+-
+Locate-3D [3]
+61.1
+50.9
+-
+-
+-
+-
+-
+UniVLG [25]
+63.5
+56.4
+25.7
+78.5
+15.2
+40.0
+50.2
+2D VLMs∗
+LLaMA [2]
+37.3
+24.2
+-
+-
+-
+-
+-
+Qwen2-VL-2B [46]
+35.9
+31.9
+-
+-
+-
+-
+-
+Qwen2-VL-72B [46]
+44.8
+40.3
+-
+-
+-
+-
+-
+Qwen2.5-VL-3B [49]
+36.4
+11.8
+-
+-
+-
+-
+-
+Qwen2.5-VL-7B [49]
+41.6
+14.9
+-
+-
+-
+-
+-
+GPT-4o [39]
+48.2
+32.5
+18.0
+58.3
+14.2
+33.4
+-
+Two-Stage
+ChatScene [19]
+55.5
+50.2
+21.6
+87.7
+18.0
+41.6
+54.6
+LEO [20]
+-
+-
+24.5
+101.4
+20.0
+49.2
+50.0
+LMMs
+Video-3D LLM - 7B [57]
+58.1
+51.7
+30.1
+102.1
+-
+-
+58.6
+Single-Stage
+NaviLLM [55]
+-
+-
+23.0
+75.9
+15.4
+38.4
+-
+LL3DA [11]
+-
+-
+-
+76.8
+15.9
+37.3
+-
+SceneLLM [16]
+-
+-
+27.2
+80.0
+16.6
+40.0
+54.2
+3D-LLM [17]
+30.3
+-
+20.5
+69.4
+14.5
+35.7
+-
+Grounded 3D-LLM [12]
+48.6
+44.0
+-
+75.9
+-
+-
+-
+Reason3D [22]
+49.6
+41.1
+-
+73.5
+15.1
+37.4
+-
+LLaVA-3D - 7B [58]
+50.1
+42.7
+27.0
+103.1
+20.8
+49.6
+55.6
+Qwen-3D - 3B (Ours)
+62.2
+55.3
+28.0
+92.0
+36.4
+46.4
+55.4
+Qwen-3D - 7B (Ours)
+62.8
+54.7
+31.5
+99.0
+39.6
+49.6
+59.6
+features to an object mask decoder. We also evaluate against
+proprietary 2D VLMs (GPT-4o [39], LLaMA [2], Qwen2-
+VL [46]). Tab. 1 presents quantitative results, and full re-
+sults on ReferIt3D are available in the appendix.
+Qwen-3D establishes a new state-of-the-art among 3D
+LMMs.
+Both our 3B and 7B models surpass the text-
+decoding single-stage model of 3D-LLM [17] by over 30%,
+the recent single-stage state-of-the-art LLaVA-3D [58] by
+12%, and the two-stage Video-3D-LLM [57] by 4%. This
+establishes Qwen-3D as the new state-of-the-art for 3D ref-
+erential grounding among LMM-based models.
+Qwen-3D closes the gap with expert 3D grounding mod-
+els.
+On ScanRefer [10], Qwen-3D closely matches the
+state-of-the-art expert model UniVLG, substantially nar-
+rowing the gap between specialist 3D models and LMM-
+based approaches, and outperforming all other methods.
+Table 2. Evaluation on Locate3D ScanNet++.
+Model
+Acc@25
+Acc@50
+UniVLG [25]
+32.3
+24.6
+Video-3D LLM [57]
+33.2
+27.6
+Qwen-3D - 3B (Ours)
+55.7
+43.4
+4.2. Out-of-Domain 3D Referential Grounding
+While LMMs often trail specialists in-domain, they typ-
+ically excel at out-of-domain (OOD) generalization. We
+evaluate Qwen-3D on Locate-3D [3], which provides hu-
+man instructions for ScanNet++ [52] scenes. ScanNet++
+introduces a distinct domain shift from our fine-tuning data
+as it is captured via iPhone LiDAR rather than ScanNet’s
+iPad Structure sensor.
+We compare against public checkpoints of UniVLG and
+Video-3D-LLM (supplied with state-of-the-art ODIN [24]
+box proposals). We omit LLaVA-3D [58] as its ground-
+Table 3. Evaluation on ScanNet200 Instance Segmentation.
+Model
+mAP mAP25
+Mask3D [42]
+27.4
+42.3
+Closed
+PQ3D [60]
+27.0
+46.3
+Vocabulary MAFT [29]
+29.2
+43.3
+ODIN [24]
+31.5
+53.1
+Language-
+PQ3D [60]
+20.2
+32.5
+Prompted
+UniVLG [25]
+27.9
+46.1
+LLM-
+Grounded-3D-LLM [12]
+12.1
+16.8
+Based
+Qwen-3D - 3B (Ours)
+25.3
+41.5
+ing model weights and code are not publicly released. As
+shown in Tab. 2, Qwen-3D significantly outperforms both
+baselines on these OOD tasks. We attribute the improved
+generalization over UniVLG to Qwen-3D’s stronger pre-
+training. Furthermore, while Video-3D-LLM uses a large
+VLM backbone, its reliance on off-the-shelf 3D detectors
+bottlenecks OOD robustness.
+Conversely, Qwen-3D di-
+rectly decodes boxes from VLM features, allowing it to bet-
+ter exploit the underlying representation for superior gener-
+alization.
+4.3. 3D Instance Segmentation
+We evaluate Qwen-3D on the ScanNet200 [41] instance
+segmentation benchmark. While traditional methods [24,
+42] assume a closed vocabulary setup, recent models [25,
+60]—like ours—adopt a language-prompted paradigm
+(e.g., “find chairs. tables. sofa.”). Furthermore, because
+most 3D grounding VLMs predict only a few bounding
+boxes, they fail as full scene detectors, with Grounded-
+3D-LLM [12] being the only exception to our knowledge.
+As shown in Tab. 3, Qwen-3D outperforms Grounded-3D-
+LLM by 13% mAP and 25% mAP25, approaching the per-
+formance of language-prompted specialist models.
+4.4. 3D Visual Question Answering
+We evaluate Qwen-3D on two 3D question answering
+benchmarks: ScanQA [4] and SQA3D [38]. Both datasets
+use visual scenes from ScanNet [14], with ScanQA focus-
+ing on spatial-relation questions and SQA3D emphasizing
+situational reasoning.
+Following prior work, we report Exact Match (EM@1),
+ROUGE (R), CIDEr (C), and METEOR (M). As shown
+in Tab. 1, Qwen-3D on the 3B variant outperforms state-
+of-the-art expert model UniVLG [25], and achieves compa-
+rable performance to the single-stage LMM state-of-the-art
+LLaVA-3D-7B [58], while the 7B variant outperforms all
+baselines.
+Table 4. 2D Ref. grounding datasets and RealWorldQA
+Model
+RefCOCO
+RefCOCO+
+RefCOCOg
+RealWorldQA
+LAVT [51] (B)
+72.7
+62.4
+61.2
+-
+ReSTR [28]
+67.2
+55.7
+54.5
+-
+X-Decoder (L) [61]
+-
+-
+64.6
+-
+UniVLG [25]
+69.2
+61.3
+64.1
+-
+Qwen-2.5-VL-3B [5]
+89.1
+82.4
+85.2
+62.6
+Qwen-2.5-VL-3B (mask decoder)
+89.7
+86.4
+84.4
+-
+Qwen-3D - 3B (Ours)
+88.1
+82.7
+84.0
+60.4
+4.5. 2D Vision-Language tasks
+To prevent degradation of the base model’s strong 2D ca-
+pabilities, we co-train Qwen-3D on 2D datasets, including
+the RefCOCO family [27] and LLaVA-Instruct-150k [35].
+Tab. 4 evaluates Qwen-3D against its pre-trained base
+model (Qwen2.5-VL 3B [5]) on RefCOCO 2D grounding
+benchmarks and the held-out RealWorldQA [48] dataset.
+As in our 3D setup, Qwen-3D predicts segmentation masks
+which we convert to bounding boxes for evaluation. Results
+show that Qwen-3D preserves the strong 2D capabilities of
+Qwen2.5-VL despite additional 3D fine-tuning, indicating
+that geometry-aware reasoning can be added without sacri-
+ficing the general multimodal capabilities of the base model.
+For additional visualizations of Qwen-3D, ablations on
+pre-training retention, and results on text-only tasks, please
+refer to the appendix.
+4.6. Additional Analysis and Ablations
+We ablate our key design choices on ScanRefer (Top-
+1@0.5) utterances from 50 randomly sampled scenes from
+the validation set using the 3B variant of our model.
+Geometry-Aware Decoding:
+We ablate the full token in-
+terface between the vision-language attention module and
+the object mask decoder against a variant that replaces the
+full text token injection with a special grounding token <
+REF > into the mask decoder, similar to LLaVA-3D [58]
+and Grounded-3D-LLM [12]. As shown in Tab. 5a, with the
+< REF > token, Qwen-3D underperforms both LLaVA-
+3D and Grounded-3D-LLM, however, Qwen-3D with the
+full text and visual token interface greatly outperforms all
+< REF > token baselines.
+Geometry-Aware Attention:
+We compare the 3D po-
+sitional embeddings against the 2D MRoPE utilized in
+Qwen2.5-VL and a naive implementation of 3D RoPE in
+Qwen’s MRoPE on 3D grounding. As shown in Tab. 5b,
+our 3D RoPE outperforms all other RoPE variants. We hy-
+pothesize this is because 3D RoPE improves the model’s
+cross-view spatial reasoning over the 2D variant, while the
+distribution of the frequencies in Qwen’s original MRoPE
+hinders the model’s capability to discern spatial relation-
+ships along the point cloud’s axes. We provide further de-
+tails of the alternative RoPE designs in the appendix.
+Causal Mask vs. Full Attention Mask:
+Qwen2.5-VL
+applies causal masking in its vision–language attention lay-
+Table 5. Ablations of Qwen-3D
+(a) Text vs. < REF >
+Model
+Top1 Acc.
+Grounded 3D-LLM
+44.0
+LLaVA-3D - 7B
+42.7
+Qwen-3D < REF >
+39.7
+Qwen-3D (ours)
+53.5
+(b) Pos. Embed.
+Pos. Embed.
+Top1 Acc
+2D
+53.2
+Vanilla 3D
+49.9
+Aligned 3D (ours)
+53.5
+(c) Attn. Mask
+Mask Type Top1 Acc.
+Causal
+36.4
+Full
+53.5
+(d) VLM Tuning
+Finetune Top1 Acc.
+Frozen
+37.0
+Finetune
+53.5
+ers, even for non-autoregressive tasks such as grounding.
+We compare this original design—which stays closer to
+the model’s pre-training distribution—against a full atten-
+tion mask where all vision and language tokens attend to
+each other except during autoregressive text generation. As
+shown in Tab. 5c, the full-attention variant significantly out-
+performs the causal-mask variant.
+Freezing vs. Fine-tuning the Base VLM:
+As shown in
+Tab. 5d, fine-tuning the underlying Qwen VLM is essen-
+tial to achieve strong grounding performance. Keeping the
+VLM frozen leads to a substantial drop in accuracy.
+5. Limitations and Future Directions
+While Qwen-3D performs attention in a shared 3D coor-
+dinate system, we assume that this coordinate system is
+largely static over time. Dynamic environments introduce
+non-rigid motion, object interactions, and topology changes
+that cannot be captured by a single persistent scene repre-
+sentation. Extending geometry-aware attention and ground-
+ing to dynamic 4D scene representations is an important di-
+rection for future work. This will likely require integrat-
+ing temporal motion representations, dynamic scene recon-
+struction, or object-centric tracking into the model’s geo-
+metric reasoning pipeline.
+While Qwen-3D grounds language directly into 3D
+scene representations, most tasks considered in this work
+involve a single grounding step. Many embodied and in-
+teractive applications require compositional reasoning over
+multiple grounded entities, such as spatial comparisons, re-
+lational reasoning, and long-horizon instruction following.
+Integrating geometry-aware grounding with iterative rea-
+soning frameworks may enable richer forms of scene un-
+derstanding and planning.
+Qwen-3D relies on externally estimated depth maps and
+camera poses to construct its world-space representation.
+While our experiments demonstrate robustness to substan-
+tial depth and pose noise, errors in geometric reconstruction
+ultimately limit downstream grounding performance. An
+interesting future direction is to jointly optimize geometry
+estimation and language-guided scene understanding within
+a single end-to-end framework.
+6. Conclusion
+We introduced Qwen-3D, a geometry-aware 3D vi-
+sion–language model that integrates explicit multi-view ge-
+ometric reasoning into a strong multimodal backbone. By
+leveraging depth and camera pose to guide token compres-
+sion and 3D Rotary Positional Embeddings to perform at-
+tention in the world space, Qwen-3D efficiently processes
+long multi-view video streams while maintaining consis-
+tent cross-view spatial understanding. We further proposed
+a tightly integrated grounding architecture that directly
+connects contextualized vision–language features from the
+backbone to a 3D query-based segmentation decoder, en-
+abling direct language-to-3D alignment. Extensive exper-
+iments demonstrate that Qwen-3D substantially advances
+the state of the art among general-purpose 3D LMMs, im-
+proving grounding, segmentation, and visual question an-
+swering while preserving strong 2D capabilities.
+More
+broadly, our results suggest that geometry-aware represen-
+tations alone are insufficient for high-quality 3D perception.
+Closing the gap between language reasoning and dense ge-
+ometric prediction requires equally strong geometry-aware
+decoding mechanisms.
+We believe that tightly coupling
+world-space representations with dense grounding mod-
+ules provides a promising foundation for future multimodal
+models that reason seamlessly across images, videos, and
+3D environments.
+7. Acknowledgements
+This material is based upon work supported by the Na-
+tional Science Foundation Graduate Research Fellowship
+Program under Grant No(s) DGE2140739, an NSF Ca-
+reer award, ONR award N00014-23-1-2415, AFOSR Grant
+FA9550-23-1-0257. Any opinions, findings, and conclu-
+sions or recommendations expressed in this material are
+those of the author(s) and do not necessarily reflect the
+views of the National Science Foundation. Ayush Jain is
+supported in part by the Meta AI Mentorship Fellowship.
+The authors thank Gabriel Sarch and Akshan Agrawal for
+proofreading and helpful discussions.
+References
+[1] Panos Achlioptas, Ahmed Abdelreheem, Fei Xia, Mohamed
+Elhoseiny, and Leonidas Guibas. ReferIt3D: Neural Listen-
+ers for Fine-Grained 3D Object Identification in Real-World
+Scenes. In Proc. ECCV, 2020. 6, 13, 14, 15
+[2] Meta AI. Llama 3: The llama-3 herd of models. https:
+//ai.meta.com/llama/, 2024. Large language model.
+7, 15
+[3] Sergio Arnaud, Paul McVay, Ada Martin, Arjun Majum-
+dar, Krishna Murthy Jatavallabhula, Phillip Thomas, Rus-
+lan Partsey, Daniel Dugas, Abha Gejji, Alexander Sax,
+Vincent-Pierre Berges, Mikael Henaff, Ayush Jain, Ang Cao,
+Ishita Prasad, Mrinal Kalakrishnan, Michael Rabbat, Nicolas
+Ballas, Mido Assran, Oleksandr Maksymets, Aravind Ra-
+jeswaran, and Franziska Meier. Locate 3d: Real-world ob-
+ject localization via self-supervised learning in 3d, 2025. 4,
+6, 7, 15
+[4] Daichi Azuma, Taiki Miyanishi, Shuhei Kurita, and Motoaki
+Kawanabe. Scanqa: 3d question answering for spatial scene
+understanding. In proceedings of the IEEE/CVF conference
+on computer vision and pattern recognition, pages 19129–
+19139, 2022. 6, 7, 8, 13
+[5] Shuai Bai, Keqin Chen, Xuejing Liu, and Jialin Wang et. al.
+Qwen2.5-vl technical report, 2025. 2, 3, 4, 8, 14
+[6] Daniel Bolya, Cheng-Yang Fu, Xiaoliang Dai, Peizhao
+Zhang, Christoph Feichtenhofer, and Judy Hoffman. Token
+merging: Your ViT but faster. In International Conference
+on Learning Representations, 2023. 16
+[7] Ang Cao, Sergio Arnaud, Oleksandr Maksymets, Jian-
+ing Yang, Ayush Jain, Sriram Yenamandra, Ada Martin,
+Vincent-Pierre Berges, Paul McVay, Ruslan Partsey, Aravind
+Rajeswaran, Franziska Meier, Justin Johnson, Jeong Joon
+Park, and Alexander Sax. From thousands to billions: 3d
+visual language grounding via render-supervised distillation
+from 2d vlms, 2025. 6
+[8] Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas
+Usunier, Alexander Kirillov, and Sergey Zagoruyko. End-
+to-End Object Detection with Transformers. In Proc. ECCV,
+2020. 6
+[9] Angel Chang, Angela Dai, Thomas Funkhouser, Maciej
+Halber, Matthias Niessner, Manolis Savva, Shuran Song,
+Andy Zeng, and Yinda Zhang.
+Matterport3d: Learning
+from rgb-d data in indoor environments.
+arXiv preprint
+arXiv:1709.06158, 2017. 6
+[10] Dave Zhenyu Chen, Angel Chang, and Matthias Nießner.
+ScanRefer: 3D Object Localization in RGB-D Scans using
+Natural Language. In Proc. ECCV, 2020. 6, 7, 13, 15
+[11] Sijin Chen, Xin Chen, Chi Zhang, Mingsheng Li, Gang
+Yu, Hao Fei, Hongyuan Zhu, Jiayuan Fan, and Tao Chen.
+Ll3da:
+Visual interactive instruction tuning for omni-3d
+understanding reasoning and planning.
+In Proceedings of
+the IEEE/CVF conference on computer vision and pattern
+recognition, pages 26428–26438, 2024. 1, 3, 7, 15
+[12] Yilun Chen, Shuai Yang, Haifeng Huang, Tai Wang, Run-
+sen Xu, Ruiyuan Lyu, Dahua Lin, and Jiangmiao Pang.
+Grounded 3d-llm with referent tokens.
+arXiv preprint
+arXiv:2405.10370, 2024. 1, 3, 4, 5, 6, 7, 8, 15
+[13] Bowen Cheng, Ishan Misra, Alexander G. Schwing, Alexan-
+der Kirillov, and Rohit Girdhar.
+Masked-attention mask
+transformer for universal image segmentation. 2022. 5, 6,
+16
+[14] Angela Dai, Angel X Chang, Manolis Savva, Maciej Hal-
+ber, Thomas Funkhouser, and Matthias Nießner. Scannet:
+Richly-annotated 3d reconstructions of indoor scenes.
+In
+Proceedings of the IEEE conference on computer vision and
+pattern recognition, pages 5828–5839, 2017. 1, 6, 8
+[15] Angela Dai, Matthias Nießner, Michael Zollöfer, Shahram
+Izadi, and Christian Theobalt.
+Bundlefusion: Real-time
+globally consistent 3d reconstruction using on-the-fly surface
+re-integration. ACM Transactions on Graphics 2017 (TOG),
+2017. 13
+[16] Rao Fu, Jingyu Liu, Xilun Chen, Yixin Nie, and Wen-
+han Xiong.
+Scene-llm:
+Extending language model for
+3d visual understanding and reasoning.
+arXiv preprint
+arXiv:2403.11401, 2024. 3, 7, 15
+[17] Yining Hong, Haoyu Zhen, Peihao Chen, Shuhong Zheng,
+Yilun Du, Zhenfang Chen, and Chuang Gan. 3d-llm: In-
+jecting the 3d world into large language models. Advances
+in Neural Information Processing Systems, 36:20482–20494,
+2023. 3, 4, 5, 6, 7, 15
+[18] Edward J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-
+Zhu, Yuanzhi Li, Shean Wang, Lu Wang, and Weizhu Chen.
+Lora: Low-rank adaptation of large language models, 2021.
+6
+[19] Haifeng Huang, Yilun Chen, Zehan Wang, Rongjie Huang,
+Runsen Xu, Tai Wang, Luping Liu, Xize Cheng, Yang
+Zhao, Jiangmiao Pang, et al.
+Chat-scene: Bridging 3d
+scene and large language models with object identifiers.
+Advances in Neural Information Processing Systems, 37:
+113991–114017, 2024. 1, 3, 4, 6, 7, 15
+[20] Jiangyong Huang, Silong Yong, Xiaojian Ma, Xiongkun
+Linghu, Puhao Li, Yan Wang, Qing Li, Song-Chun Zhu,
+Baoxiong Jia, and Siyuan Huang. An embodied generalist
+agent in 3d world. arXiv preprint arXiv:2311.12871, 2023.
+1, 3, 4, 6, 7, 15
+[21] Jie Huang, Xuejing Liu, Sibo Song, Ruibing Hou, Hong
+Chang, Junyang Lin, and Shuai Bai. Revisiting multimodal
+positional encoding in vision-language models, 2026. 16
+[22] Kuan-Chih Huang, Xiangtai Li, Lu Qi, Shuicheng Yan, and
+Ming-Hsuan Yang. Reason3d: Searching and reasoning 3d
+segmentation via large language model. 3DV, 2025. 4, 6, 7,
+15
+[23] Ayush Jain, Nikolaos Gkanatsios, Ishita Mediratta, and Kate-
+rina Fragkiadaki. Bottom up top down detection transform-
+ers for language grounding in images and point clouds. In
+European Conference on Computer Vision, pages 417–433.
+Springer, 2022. 4, 6, 7, 15
+[24] Ayush Jain, Pushkal Katara, Nikolaos Gkanatsios, Adam W
+Harley, Gabriel Sarch, Kriti Aggarwal, Vishrav Chaudhary,
+and Katerina Fragkiadaki. Odin: A single model for 2d and
+3d segmentation.
+In Proceedings of the IEEE/CVF Con-
+ference on Computer Vision and Pattern Recognition, pages
+3564–3574, 2024. 1, 4, 6, 7, 8, 15
+[25] Ayush Jain, Alexander Swerdlow, Yuzhou Wang, Sergio Ar-
+naud, Ada Martin, Alexander Sax, Franziska Meier, and Ka-
+terina Fragkiadaki. Unifying 2d and 3d vision-language un-
+derstanding, 2025. 1, 4, 6, 7, 8, 13, 14, 15, 16
+[26] Aishwarya Kamath, Mannat Singh, Yann André LeCun, Is-
+han Misra, Gabriel Synnaeve, and Nicolas Carion. MDETR
+- Modulated Detection for End-to-End Multi-Modal Under-
+standing. In Proc. ICCV, 2021. 6
+[27] Sahar Kazemzadeh, Vicente Ordonez, Mark Matten, and
+Tamara Berg.
+ReferItGame: Referring to objects in pho-
+tographs of natural scenes. In Proceedings of the 2014 Con-
+ference on Empirical Methods in Natural Language Process-
+ing (EMNLP), pages 787–798, Doha, Qatar, 2014. Associa-
+tion for Computational Linguistics. 6, 8, 13
+[28] Namyup Kim, Dongwon Kim, Cuiling Lan, Wenjun Zeng,
+and Suha Kwak. Restr: Convolution-free referring image
+segmentation using transformers, 2022. 8
+[29] Xin Lai, Yuhui Yuan, Ruihang Chu, Yukang Chen, Han Hu,
+and Jiaya Jia.
+Mask-attention-free transformer for 3d in-
+stance segmentation. In Proceedings of the IEEE/CVF Inter-
+national Conference on Computer Vision, pages 3693–3703,
+2023. 8
+[30] Xin Lai, Zhuotao Tian, Yukang Chen, Yanwei Li, Yuhui
+Yuan, Shu Liu, and Jiaya Jia. Lisa: Reasoning segmenta-
+tion via large language model, 2024. 4
+[31] Junnan Li, Dongxu Li, Silvio Savarese, and Steven Hoi.
+Blip-2:
+Bootstrapping language-image pre-training with
+frozen image encoders and large language models. In In-
+ternational conference on machine learning, pages 19730–
+19742. PMLR, 2023. 3
+[32] Liunian Harold Li, Pengchuan Zhang, Haotian Zhang, Jian-
+wei Yang, Chunyuan Li, Yiwu Zhong, Lijuan Wang, Lu
+Yuan, Lei Zhang, Jenq-Neng Hwang, et al.
+Grounded
+language-image pre-training.
+In Proceedings of the
+IEEE/CVF Conference on Computer Vision and Pattern
+Recognition, pages 10965–10975, 2022. 6
+[33] Rong Li, Yuhao Dong, Tianshuai Hu, Ao Liang, Youquan
+Liu, Dongyue Lu, Liang Pan, Lingdong Kong, Junwei Liang,
+and Ziwei Liu. 3eed: Ground everything everywhere in 3d.
+In NeurIPS 2025 Datasets and Benchmarks Track, 2025. 13
+[34] Tsung-Yi Lin, Michael Maire, Serge Belongie, James Hays,
+Pietro Perona, Deva Ramanan, Piotr Dollár, and C Lawrence
+Zitnick. Microsoft coco: Common objects in context. In
+Computer Vision–ECCV 2014: 13th European Conference,
+Zurich, Switzerland, September 6-12, 2014, Proceedings,
+Part V 13, pages 740–755. Springer, 2014. 6, 13
+[35] Haotian Liu, Chunyuan Li, Qingyang Wu, and Yong Jae Lee.
+Visual instruction tuning. Advances in neural information
+processing systems, 36:34892–34916, 2023. 6, 8, 13
+[36] Yuanyuan Liu, Haiyang Mei, Li Zhang, et al.
+View-on-
+graph: Zero-shot 3d visual grounding via vision-language
+reasoning on scene graphs. In Proceedings of the AAAI Con-
+ference on Artificial Intelligence (AAAI), 2026. 7
+[37] Junyu Luo, Jiahui Fu, Xianghao Kong, Chen Gao, Haibing
+Ren, Hao Shen, Huaxia Xia, and Si Liu. 3d-sps: Single-stage
+3d visual grounding via referred point progressive selection.
+In 2022 IEEE/CVF Conference on Computer Vision and Pat-
+tern Recognition (CVPR). IEEE, 2022. 4
+[38] Xiaojian Ma, Silong Yong, Zilong Zheng, Qing Li, Yi-
+tao Liang, Song-Chun Zhu, and Siyuan Huang.
+Sqa3d:
+Situated question answering in 3d scenes.
+arXiv preprint
+arXiv:2210.07474, 2022. 6, 8, 13
+[39] OpenAI, Aaron Hurst, Adam Lerer, Adam P. Goucher, Adam
+Perelman, Aditya Ramesh, and Aidan Clark et al. Gpt-4o
+system card, 2024. 3, 7, 15
+[40] Junha Roh, Karthik Desingh, Ali Farhadi, and Dieter
+Fox. Languagerefer: Spatial-language model for 3d visual
+grounding. In Conference on Robot Learning, pages 1046–
+1056. PMLR, 2022. 15
+[41] David Rozenberszki, Or Litany, and Angela Dai. Language-
+grounded indoor 3d semantic segmentation in the wild. In
+European Conference on Computer Vision, pages 125–141.
+Springer, 2022. 1, 6, 8, 13
+[42] Jonas Schult, Francis Engelmann, Alexander Hermans, Or
+Litany, Siyu Tang, and Bastian Leibe. Mask3d: Mask trans-
+former for 3d semantic instance segmentation.
+In 2023
+IEEE International Conference on Robotics and Automation
+(ICRA), pages 8216–8223. IEEE, 2023. 8, 16
+[43] Simranjit Singh, Georgios Pavlakos, and Dimitrios Sta-
+moulis. Evaluating zero-shot gpt-4v performance on 3d vi-
+sual question answering benchmarks, 2024. 7
+[44] Rohan Taori, Ishaan Gulrajani, Tianyi Zhang, Yann Dubois,
+Xuechen Li, Carlos Guestrin, Percy Liang, and Tatsunori B.
+Hashimoto. Stanford alpaca: An instruction-following llama
+model. https://crfm.stanford.edu/2023/03/
+13/alpaca.html, 2023. Dataset and model release. 6,
+13
+[45] Gemini Team, Rohan Anil, Sebastian Borgeaud, Jean-
+Baptiste Alayrac, Jiahui Yu, and Radu Soricut et al. Gemini:
+A family of highly capable multimodal models, 2025. 3
+[46] Peng Wang, Shuai Bai, Sinan Tan, Shijie Wang, Zhihao Fan,
+and Jinze Bai et. al. Qwen2-vl: Enhancing vision-language
+model’s perception of the world at any resolution, 2024. 7,
+15
+[47] Ruicheng Wang, Sicheng Xu, Cassie Dai, Jianfeng Xiang,
+Yu Deng, Xin Tong, and Jiaolong Yang. Moge: Unlocking
+accurate monocular geometry estimation for open-domain
+images with optimal training supervision.
+arXiv preprint
+arXiv:2410.19115, 2024. 6
+[48] X.AI. Realworldqa. Blog post, 2024. Accessed: 2025-05-12.
+8
+[49] An Yang, Baosong Yang, Beichen Zhang, Binyuan Hui, and
+Bo Zheng et. al. Qwen2.5 technical report. arXiv preprint
+arXiv:2412.15115, 2024. 7, 15
+[50] Zhengyuan Yang, Songyang Zhang, Liwei Wang, and Jiebo
+Luo.
+Sat:
+2d semantics assisted training for 3d visual
+grounding. In Proceedings of the IEEE/CVF International
+Conference on Computer Vision, pages 1856–1866, 2021. 15
+[51] Zhao Yang, Jiaqi Wang, Yansong Tang, Kai Chen, Heng-
+shuang Zhao, and Philip H. S. Torr. Lavt: Language-aware
+vision transformer for referring image segmentation, 2022. 8
+[52] Chandan Yeshwanth, Yueh-Cheng Liu, Matthias Nießner,
+and Angela Dai. Scannet++: A high-fidelity dataset of 3d in-
+door scenes. In Proceedings of the IEEE/CVF International
+Conference on Computer Vision, pages 12–22, 2023. 7
+[53] Zhihao Yuan, Xu Yan, Yinghong Liao, Ruimao Zhang,
+Sheng Wang, Zhen Li, and Shuguang Cui.
+Instancerefer:
+Cooperative holistic understanding for visual grounding on
+point clouds through instance multi-level contextual refer-
+ring. In Proceedings of the IEEE/CVF International Confer-
+ence on Computer Vision, pages 1791–1800, 2021. 15
+[54] Yiming Zhang,
+ZeMing Gong,
+and Angel X Chang.
+Multi3drefer: Grounding text description to multiple 3d ob-
+jects. In Proceedings of the IEEE/CVF International Con-
+ference on Computer Vision, pages 15225–15236, 2023. 14
+[55] Duo Zheng, Shijia Huang, Lin Zhao, Yiwu Zhong, and Li-
+wei Wang. Towards learning a generalist model for embod-
+ied navigation. In Proceedings of the IEEE/CVF Conference
+on Computer Vision and Pattern Recognition, pages 13624–
+13634, 2024. 7, 15
+[56] Duo Zheng, Shijia Huang, Yanyang Li, and Liwei Wang.
+Learning from videos for 3d world: Enhancing mllms with
+3d vision geometry priors. arXiv preprint arXiv:2505.24625,
+2025. 7
+[57] Duo Zheng, Shijia Huang, and Liwei Wang. Video-3d llm:
+Learning position-aware video representation for 3d scene
+understanding. In Proceedings of the IEEE/CVF Conference
+on Computer Vision and Pattern Recognition (CVPR), pages
+8995–9006, 2025. 1, 3, 4, 5, 6, 7, 13, 14, 15
+[58] Chenming Zhu, Tai Wang, Wenwei Zhang, Jiangmiao Pang,
+and Xihui Liu. Llava-3d: A simple yet effective pathway to
+empowering lmms with 3d-awareness, 2024. 1, 3, 4, 5, 6, 7,
+8, 13, 14, 15
+[59] Ziyu Zhu, Xiaojian Ma, Yixin Chen, Zhidong Deng, Siyuan
+Huang, and Qing Li. 3d-vista: Pre-trained transformer for 3d
+vision and text alignment. In Proceedings of the IEEE/CVF
+International Conference on Computer Vision, pages 2911–
+2921, 2023. 1, 4, 6, 7, 15
+[60] Ziyu Zhu, Zhuofan Zhang, Xiaojian Ma, Xuesong Niu, Yixin
+Chen, Baoxiong Jia, Zhidong Deng, Siyuan Huang, and Qing
+Li. Unifying 3d vision-language understanding via prompt-
+able queries. arXiv preprint arXiv:2405.11442, 2024. 4, 6,
+7, 8, 15
+[61] Xueyan Zou, Zi-Yi Dou, Jianwei Yang, Zhe Gan, Linjie Li,
+Chunyuan Li, Xiyang Dai, Harkirat Behl, Jianfeng Wang, Lu
+Yuan, et al. Generalized decoding for pixel, image, and lan-
+guage. In Proceedings of the IEEE/CVF Conference on Com-
+puter Vision and Pattern Recognition, pages 15116–15127,
+2023. 8
+8. Appendix
+8.1. Sensitivity to Pose and Depth Noise
+While Qwen-3D already operates on real-world sensor
+noise in all experiments reported in the paper, we further
+stress-test the model under controlled settings with substan-
+tial depth and camera pose noise.
+Following UniVLG [25], we simulate depth noise by
+injecting Gaussian noise with increasing variance into the
+raw depth maps before unprojection. To simulate additional
+pose noise, we add Gaussian noise with increasing variance
+to both the translation and rotation components of the pro-
+vided camera poses.
+We evaluate on 50 randomly sampled scenes from Scan-
+Refer (Top-1@0.25) against UniVLG, the strongest re-
+ported baseline on ScanRefer. We choose UniVLG as the
+primary baseline because many strong 3D LMMs, such as
+Video-3D-LLM [57], adopt two-stage pipelines that rely
+on external object detection models and operate on pre-
+processed detections at inference time. Fairly evaluating
+such methods under additional noise would require these
+external detectors to be re-run on the perturbed point clouds,
+making comparisons difficult to standardize. Additionally,
+existing single-stage 3D LMMs either substantially under-
+perform our model or do not release the necessary visual
+grounding code (e.g., LLaVA-3D [58]).
+As shown in Fig. 4, Qwen-3D avoids catastrophic fail-
+ure even under significant noise.
+Specifically, Qwen-
+3D demonstrates high robustness to depth noise, showing
+no significant performance drop even under high variance
+noise, matching UniVLG’s resilience to spurious points.
+Qwen-3D is similarly robust to pose noise, degrading grace-
+fully and even outperforming the state-of-the-art model un-
+der extreme misalignment. We attribute this robustness to
+the strong integration of 2D pretrained vision-language pri-
+ors from the Qwen backbone into explicit 3D structures, al-
+lowing the model to project reasoning over 2D inputs into
+accurate 3D masks even when the underlying 3D structures
+are corrupted.
+8.2. Additional 3D Grounding Results
+We report detailed 3D grounding evaluations on the SR3D,
+NR3D [1], and ScanRefer [10] benchmarks in Tab. 6. To
+our knowledge, no prior 3D LLM-based models report on
+the SR3D and NR3D benchmarks. Qwen-3D outperforms
+all prior LLM methods on ScanRefer with only a 3B VLM
+backbone, despite many of the strongest prior methods uti-
+lizing more powerful backbones of 7B or more.
+8.3.
+Out-of
+Domain
+Outdoor
+3D
+Referential
+Grounding
+We evaluate our model out-of-domain on the 3EED [33]
+outdoor 3D referential grounding benchmark.
+Since the
+benchmark utilizes sparse lidar point clouds not aligned
+with their provided RGB images, we use MapAnything to
+perform metric depth completion and obtain dense, metric
+depth maps for each RGB image. We also use Segment
+Anything to obtain bounding boxes aligned to the RGB im-
+ages and project them to 3D using this aligned depth to ob-
+tain 3D ground truth bounding boxes aligned with the dense
+RGB-D point clouds. We evaluate in the same setup against
+UniVLG and find that our model matches UniVLG overall
+and outperforms it on the drone and quad splits. We exclude
+Video-3D-LLM since it relies on object detectors typically
+trained on indoor data that does not cover the classes used
+in this benchmark.
+8.4. Test-Time Frame Ablation
+We conduct an ablation on the number of input frames at
+test-time on 50 randomly sampled scenes from ScanRefer,
+gradually decreasing the maximum number of input frames.
+We find that even when decreasing the number of views
+drastically from a maximum of 400 frames to 15 frames,
+Qwen-3D’s grounding performance does not degrade catas-
+trophically, maintaining a grounding performance of 56%
+even with 15 input views in Fig. 5.
+8.5. End-to-end Latency
+We estimate the end-to-end latency of Qwen-3D on 3D
+tasks, tracking from raw scene inputs to the final 3D ground-
+ing outputs. As noted in Section 3 of the main text, doing
+an inference on the full set of multi-view RGB-D frames
+through Qwen-3D takes approximately 2 seconds. This in-
+cludes the time required to unproject RGB-D frames (20
+ms) and voxelize the 3D point cloud (1 ms). Standard RGB-
+D SLAM reconstruction methods [15] used for ScanNet
+scenes add about 1 to 5 seconds, yielding a total end-to-
+end latency of roughly 3 to 7 seconds. Notably, SLAM
+reconstruction costs can be amortized per scene as the re-
+construction only needs to be run once; subsequent queries
+to the same environment only require the 2-second model
+forwarding time. Additionally, we note that all 3D LMMs
+need to run SLAM to obtain their point clouds; Qwen-3D
+does not introduce any new dependencies over prior meth-
+ods.
+8.6. Detailed Comparison of Training Datasets
+Qwen-3D is trained on a mix of 2D and 3D datasets.
+The 3D datasets comprises approximately 255k sam-
+ples spanning 3D question answering [4, 38], referen-
+tial grounding [1, 10], and instance segmentation [41].
+The 2D datastes include referential grounding (Ref-
+COCO, RefCOCO+, RefCOCOg [27]), instance segmen-
+tation (COCO [34]), captioning and question answering
+(LLaVA-Instruct-150k [35]), and instruction fine-tuning
+(Alpaca [44]). Notably, all of these 2D datasets are included
+0.00
+0.05
+0.10
+0.15
+0.20
+0.25
+0.30
+Pose Noise Std
+20
+30
+40
+50
+60
+ScanRefer Top-1 Acc @ 0.25
+Accuracy vs. Pose Gaussian Noise
+Qwen3D
+UniVLG
+(a) Pose noise sensitivity.
+0.00
+0.05
+0.10
+0.15
+0.20
+0.25
+0.30
+Depth Noise Std
+20
+30
+40
+50
+60
+ScanRefer Top-1 Acc @ 0.25
+Accuracy vs. Depth Gaussian Noise
+Qwen3D
+UniVLG
+(b) Depth noise sensitivity.
+Figure 4. Sensitivity analysis to camera pose noise (left) and depth noise (right) on ScanRefer (Top-1@0.25). We compare Qwen-3D
+against state-of-the-art expert model UniVLG [25]
+Figure 5. Sensitivity to number of views on ScanRefer (Top-1@0.25)
+in the pre-training dataset of many modern 2D VLMs, in-
+cluding Qwen2.5VL, the backbone we use.
+We include
+them to avoid catastrophic forgetting of 2D capabilities as
+our model’s VLM backbone as it trains on new 3D data.
+Our most competent expert model baseline,
+Uni-
+VLG [25], is trained on a nearly identical dataset mixture,
+excluding only LLaVA-Instruct-150k and the text-only Al-
+paca dataset. In contrast, the state-of-the-art single-stage
+3D LMM, LLaVA-3D [58] utilizes a much larger 3D fine-
+tuning dataset, compiling over 860K 3D visual-reasoning
+samples together from various benchmarks alongside the
+2D LLaVA-Instruct-150k dataset. The leading two-stage
+3D LMM, Video-3D-LLM [57], uses a 3D training mix-
+ture similar to ours - substituting Referit3D [1] with
+Multi3DRefer [54]. However, it also relies heavily on ex-
+ternal object detectors, which are typically trained on Scan-
+Net200 instance segmentation datasets.
+8.7. Rotary Position Embedding Implementation
+To process interleaved visual and textual data in the vision-
+attention layers, Qwen2.5-VL [5] utilizes a Multimodal Ro-
+tary Positional Embedding (mRoPE). This method decom-
+poses positional encodings into temporal, height, and width
+components. Each token i in a sequence of length K is
+assigned a position ID in each dimension, and the final po-
+sitional embedding is the concatenation of the sinusoidal
+encodings of these components:
+PE(p) = PE(ti; hi; wi)K
+i=1,
+For text tokens, the temporal ID t increments linearly,
+while h and w are assigned the same values as t, effectively
+reducing mRoPE to 1D-RoPE. For image tokens, t is held
+constant while (h, w) are assigned to corresponding pixel
+coordinates. To maintain temporal consistency across all
+modalities and dimensions, the position IDs of each modal-
+ity are incremented by the maximum position ID of the pre-
+ceding modality, ensuring visual features and text instruc-
+tions occupy distinct, non-overlapping positions in the po-
+sitional embeddings.
+2D RoPE Adaptation: This extension aims to stay as close
+as possible to the Qwen2.5-VL pre-training distribution.
+Table 6. Results on 3D language grounding for both experts and LMMs. We evaluate top-1 accuracy on the official validation set. ∗
+UniVLG numbers reproduced using the official code with a single 40GB 8 GPU node instead of their 32 GPU setup, and verified with the
+authors.
+SR3D
+NR3D
+ScanRefer
+Methods
+Acc
+@25
+(Det)
+Acc
+@50
+(Det)
+Acc
+@75
+(Det)
+Acc
+(GT)
+Acc
+@25
+(Det)
+Acc
+@50
+(Det)
+Acc
+@75
+(Det)
+Acc
+(GT)
+Acc
+@25
+(Det)
+Acc
+@50
+(Det)
+Acc
+@75
+(Det)
+ReferIt3DNet [1]
+27.7
+-
+-
+39.8
+24.0
+-
+-
+-
+26.4
+16.9
+-
+ScanRefer [10]
+-
+-
+-
+-
+-
+-
+-
+-
+35.5
+22.4
+-
+InstanceRefer [53]
+31.5
+-
+-
+48.0
+29.9
+-
+-
+-
+40.2
+32.9
+-
+LanguageRefer [40]
+39.5
+-
+-
+56.0
+28.6
+-
+-
+-
+-
+-
+-
+SAT-2D [50]
+35.4
+-
+-
+57.9
+31.7
+-
+-
+-
+44.5
+30.1
+-
+BUTD-DETR [23]
+52.1
+-
+-
+67.0
+43.3
+-
+-
+54.6
+52.2
+39.8
+-
+Experts
+PQ3D [60]
+62.0
+55.9
+46.2
+79.7
+52.2
+45.0
+37.6
+66.7
+56.7
+51.8
+43.3
+3D-VisTA [59]
+56.5
+51.5
+42.8
+76.4
+47.7
+42.2
+35.5
+65.1
+51.0
+46.2
+36.7
+ODIN [24]
+38.1
+29.3
+23.1
+-
+31.6
+20.8
+15.8
+-
+43.1
+33.4
+26.2
+Locate-3D [3]
+65.8
+52.9
+-
+-
+53.7
+40.5
+-
+-
+59.9
+49.6
+-
+Locate-3D+ [3]
+68.2
+54.8
+-
+-
+56.1
+43.2
+-
+-
+61.1
+50.9
+-
+UniVLG (1 GPU node) [25]∗
+71.7
+63.6
+51.2
+-
+52.8
+42.0
+33.0
+-
+64.1
+52.7
+43.5
+UniVLG [25]
+73.0
+64.8
+51.8
+-
+58.3
+49.8
+39.1
+-
+63.5
+56.4
+46.0
+2D VLMs∗
+LLaMA [2]
+21.3
+13.9
+-
+-
+28.0
+16.9
+-
+-
+37.3
+24.2
+-
+Qwen2-VL-2B [46]
+-
+-
+-
+-
+31.1
+-
+-
+-
+35.9
+31.9
+-
+Qwen2-VL-72B [46]
+-
+-
+-
+-
+47.6
+-
+-
+-
+44.8
+40.3
+-
+Qwen2.5-VL-3B [49]
+-
+-
+-
+-
+-
+-
+-
+-
+36.4
+11.8
+-
+Qwen2.5-VL-7B [49]
+-
+-
+-
+-
+-
+-
+-
+-
+41.6
+14.9
+-
+GPT-4o [39]
+29.2
+18.9
+-
+-
+38.2
+25.1
+-
+-
+48.2
+32.5
+-
+Two-Stage
+ChatScene [19]
+-
+-
+-
+-
+-
+-
+-
+-
+55.5
+50.2
+-
+LEO [20]
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+LMMs
+Video-3D LLM - 7B [57]
+-
+-
+-
+-
+-
+-
+-
+-
+58.1
+51.7
+-
+Single-Stage
+NaviLLM [55]
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+LL3DA [11]
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+SceneLLM [16]
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+3D-LLM [17]
+-
+-
+-
+-
+-
+-
+-
+-
+30.3
+-
+-
+Grounded 3D-LLM [12]
+-
+-
+-
+-
+-
+-
+-
+-
+48.6
+44.0
+-
+Reason3D [22]
+-
+-
+-
+-
+-
+-
+-
+-
+49.6
+41.1
+-
+LLaVA-3D - 7B [58]
+-
+-
+-
+-
+-
+-
+-
+-
+50.1
+42.7
+-
+Qwen-3D - 3B (Ours)
+60.4
+53.4
+40.6
+-
+57.6
+49.7
+39.1
+-
+62.2
+55.3
+44.1
+Qwen-3D - 7B (Ours)
+59.0
+53.7
+37.0
+-
+58.0
+49.1
+38.9
+-
+62.8
+54.7
+43.7
+Table 7. Zero-shot evaluation on 3EED.
+Model
+A@0.25 A@0.50
+Drone
+UniVLG [25]
+14.6
+8.4
+Qwen-3D - 3B (Ours)
+17.8
+9.0
+Quad
+UniVLG [25]
+10.6
+3.1
+Qwen-3D - 3B (Ours)
+14.2
+5.1
+Vehicle UniVLG [25]
+28.6
+11.5
+Qwen-3D - 3B (Ours)
+22.9
+10.2
+Temporal IDs follow the original scheme, while the height
+and width IDs for voxelized point-cloud tokens are obtained
+by sampling corresponding 2D pixel coordinates from one
+of the views where the voxel is visible.
+Naive 3D MRoPE: This extension aims to inject absolute
+3D spatial information by replacing the height and width
+components with embeddings of absolute XYZ coordinates:
+PE(p) = PE(ti; xi; yi, zi)K
+i=1,
+This method is similar to our final 3D RoPE, except it
+utilizes Qwen2.5-VL’s partitioning of the feature embed-
+ding channels among the four dimensions, resulting in an
+imbalanced frequency spectrum across the four dimensions,
+with high-frequency channels being assigned to the tempo-
+ral axis and low-frequency channels being assigned to the
+z-axis [21]. We find that this uneven allocation degrades
+the model’s 3D grounding capabilities in our ablations.
+Our 3D RoPE instead initializes the same range of fre-
+quencies for each dimension, resulting in a uniform distri-
+bution of high and low frequency channels across all com-
+ponents. We find that this method significantly outperforms
+all other variants on 3D grounding tasks.
+8.8. Additional Hyperparameters
+Hungarian Matching cost weights during training have a
+sizable impact on our model’s performance on 3D ground-
+ing tasks. Our final configuration utilizes the standard cost
+coefficients from Mask2Former [13], as we found that alter-
+native weighting schemes proposed in other 3D grounding
+works [25] can hinder performance.
+8.9. Comparison with Token Merging
+While Qwen-3D utilizes voxelization pooling to reduce
+multi-view redundancy, a popular alternative for reducing
+redundancy in video model architectures is token merg-
+ing [6], which iteratively fuses visually similar tokens
+within ViT attention layers.
+We attempted to compare
+these methods to our voxelization pooling by replacing the
+voxelization with a plug-and-play token merging strategy
+within our vision-language attention layers [6]. This im-
+plementation proved infeasible for dense 3D scenes, as
+with token merging, the first vision-language attention layer
+must still process the point cloud at full resolution (aver-
+aging around 33K points for ScanNet scenes). This con-
+sistently resulted in GPU out-of-memory errors during in-
+ference, regardless of how aggressively the token merging
+would downsample in subsequent layers. Conversely, our
+voxelization pooling preemptively downsamples the point
+cloud, reducing the number of points to an average of about
+14K points prior to the attention layers. This acts as a nat-
+ural, 3D-aware compression mechanism that bypasses the
+memory overhead of full-resolution multi-view attention.
+8.10. Additional Implementation Details
+For our model, we use Qwen2.5-VL as the backbone due
+to its open-source implementation and its tight integration
+of visual and textual features in its visual-language atten-
+tion layers. Within our codebase, we also introduce several
+engineering modifications to the original Qwen2.5-VL ar-
+chitecture.
+The Qwen2.5-VL vision encoder handles the batching
+of multiple images by sequentially concatenating images
+along the token dimension and using attention masks to
+prevent cross-image interaction, resulting in O(N 2) com-
+plexity in the vision encoder with respect to the number of
+images N. We optimize this by implementing batched for-
+warding in the attention mechanism to perform per-image
+batched attention. This modification reduces the complex-
+ity from O(N 2) to O(N) while preserving the original be-
+havior of the vision encoder. This also substantially reduces
+GPU memory usage, which is essential for processing scene
+videos with large numbers of input RGB images.
+Additionally, Qwen2.5-VL utilizes causal masking in its
+visual-language attention layers, allowing each vision and
+text token to attend only to itself and to earlier tokens in the
+sequence. This is problematic for our point cloud inputs be-
+cause this operation is not permutation-invariant and would
+cause the model to learn artifacts of the arbitrary ordering
+of the point cloud sequences rather than the underlying ge-
+ometry. We rectify this by replacing this causal-masked at-
+tention with all-to-all attention for all text and visual inputs
+and finetuning our backbone with causal masking only over
+the answer tokens. We ablate these changes in the main text.
+8.11. Visualizations of Failure cases
+In Fig. 6, we outline three common failure modes for Qwen-
+3D on 3D referential grounding tasks:
+Incomplete object selection (Left): The model occasion-
+ally masks only a partial section of the target. This typically
+occurs when the underlying point cloud contains significant
+holes or artifacts, skewing the geometric understanding of
+the complete object shape.
+Confusion between instances (Middle): The model cor-
+rectly identifies the object class but grounds the wrong in-
+stance.
+Confusion between multiple instances is a com-
+mon failure mode seen in mask-decoding architectures, and
+similar issues have been noted in previous works, such as
+Mask3D [42] and UniVLG [25].
+Language ambiguity (Right): The model occasionally
+confuses the target object with other reference objects men-
+tioned in more ambiguous querying expressions.
+8.12. Visualizations of Qwen-3D Results
+We include visualizations of Qwen-3D predictions in 3D
+referential grounding tasks in Fig. 7, 2D referential ground-
+ing in Fig. 8, instance segmentation in Fig. 9, and visual
+question-answering tasks in Fig. 10.
+chair with back against 
+the wall directly next to 
+book shelf
+select the suitcase that 
+is in the center of the 
+bathtub and the desk
+there is a black desk 
+chair in the center of 
+the room. it is in front 
+of the desk with a 
+phone sitting on it
+Figure 6. Failure cases of Qwen-3D on 3D grounding tasks. The red segmentation masks and boxes refer to Qwen-3D’s prediction and the
+green masks and boxes indicate the ground truth.
+Find the bed that is close 
+to the storage bin
+The door that is in 
+the center of the 
+curtain and the 
+bathroom vanity
+Select the shelf that is 
+close to the coffee table
+SR3D
+desk underneath 
+the bunk bed that is 
+next to couch
+this shelf is farther 
+away from the 
+staircase
+the door that goes 
+into the bathroom
+NR3D
+ScanRefer
+there is a sink right 
+under the soap and 
+the tissue dispenser. 
+below the sink there 
+is a small white 
+trash container
+this picture is 
+located on the back 
+wall of the room. it 
+is above the left bed
+there is a rectangular 
+green pillow. it is on 
+the right side of a 
+dark couch
+Figure 7. Visualizations of Qwen-3D’s predictions on 3D Referential Grounding Datasets SR3D, NR3D, and Scanrefer. The red
+segmentation masks and boxes refer to Qwen-3D’s prediction and the green masks and boxes indicate the ground truth.
+green color vegetable in 
+between potato and 
+carrot
+little girl sitting with toy in 
+her hand
+small cow laying 
+down
+laying down cat
+dark haired boy 
+rightest us
+bed on right bottom 
+corner
+blue shirt
+the first half of the 
+sandwich to the left
+RefCOCOg
+RefCOCO+
+RefCOCO
+third suitcase
+Figure 8. Visualizations of Qwen-3D’s predictions on 2D Referential Grounding Datasets RefCOCOg, RefCOCO+, and RefCOCO.
+The model’s predictions are indicated by the green mask and bounding box.
+COCO
+ScanNet200
+Figure 9. Visualizations of Qwen-3D’s instance segmentation predictions on COCO and ScanNet200.
+Q: what color is the bathroom 
+counter next to the door?
+A: white
+Q: the blue office chair is 
+pushed away from what 
+object?
+A: table
+Q: how many pairs of shoes can 
+be seen lying in front of the 
+table?
+A: two
+Q: i am sitting on a couch and 
+there is a backpack on my left. the 
+bookshelf to my right is made out 
+of what?
+A: wood
+Q: i am cooking on the 
+stove. how many desks 
+are behind me on the 
+right?
+A: one
+Q: i am wiping the window and 
+the table is on my backside. is 
+the table behind me long or 
+short?
+A: long
+ScanQA
+SQA3D
+Q: Is the closest red car to us 
+closer than the closest semi 
+truck?
+RealWorldVQA
+A: yes
+Q: What color is the traffic 
+lights in this scene?
+A: green
+Q: Based on the shadow, 
+where is the sun relative to 
+us?
+a. Behind
+b. On the right
+c. In front
+A: a
+Figure 10. Visualizations of Qwen-3D’s responses to visual question-answering tasks on 3D benchmarks SQA3D and ScanRefer and
+the 2D benchmark RealWorldVQA. Green boxes denote objects relevant to the posed question.
+
