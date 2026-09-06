@@ -49,3 +49,8 @@ With **8 GB RAM** and an older **GT 710**, the system is most suitable for **sma
 2. [Alibaba Group - Qwen](csv/qwen/qwen_response.ipynb)
 
 
+# Paper Chat
+
+> Test Run
+
+1. [241 MB - gemma3:270m-it-qat](pymupdf/tutorial2/tut1.ipynb)  - Max 2 page, then it stops, for my device
